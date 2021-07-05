@@ -27,7 +27,7 @@ function func(k, arr) {
   }
   q.splice(0)
 
-  // 维护单调递增队列
+  // 维护单调递减队列
   for (let i = 0; i < arr.length; i++) {
     while (q.length && arr[q[q.length - 1]] < arr[i]) q.pop()
     q.push(i)
