@@ -1,13 +1,22 @@
 function quick_sort_v1(arr, l, r) {
+  // 首位指针重合时返回
   if (l >= r) return
   let x = l, y = r, base = arr[l]
+  // 保证左右指针的顺序
   while (x < y) {
-    while (x < y & arr[y] >= base) y--
+    // 找到一个小于base的右指针位置
+    while (x < y && arr[y] >= base) y--
+    // 将小于基准值的数字partation到左侧，左指针右移
     if (x < y) arr[x++] = arr[y]
-    while (x < y & arr[x] < base) x++
+    // 找到一个大于base的左指针位置
+    while (x < y && arr[x] < base) x++
+    // 将大于基准值的数字partation到右侧，右指针左移
     if (x < y) arr[y--] = arr[x]
   }
+  // 复原base的值
   arr[x] = base
+  // 此时，以x为界限，左边都是小于base的值，右边都是大于base的值
+  // 分别让左右区域重复上述partation过程，完成排序
   quick_sort_v1(arr, l, x - 1)
   quick_sort_v1(arr, x + 1, r)
 }
