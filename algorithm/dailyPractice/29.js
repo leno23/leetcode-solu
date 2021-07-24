@@ -16,34 +16,29 @@
  * @return {number[]}
  */
  var spiralOrder = function (matrix) {
-  function circle(arr, ret) {
-      // 特判
-      if (arr.length == 0) return ret
-      let i = 0;
-      // 首行直接push
+  let ret = []
+  function circle(arr) {
+      let len = arr.length
+      if (!len) return // 数组为空时结束
+      let m = arr[0].length, i = m - 2, j = 0
+
+      /* 四个方向进行打印*/
+      // 上
       ret.push(...arr.shift())
-
-      // 从前往后将末尾元素弹出
-      for (; i < arr.length; i++) ret.push(arr[i].pop())
-      if (arr.length == 0) return ret
-      // 下标移动到末尾
-      i--
-
-      // 最后一行数据，反向push进数组中
-      let lastLen = arr[i].length - 1
-      for (j = lastLen; j >= 0; j--) ret.push(arr[i].pop())
-
-      arr = arr.filter(it => it.length)
-      if (arr.length == 0) return ret
-      i--
-
-      // 反向向前遍历将首位元素push
-      for (; i > 0; i--) ret.push(arr[i].shift())
-      // 过滤空元素
-      arr = arr.filter(it => it.length)
-      return circle(arr, ret)
+      // 右
+      for (; j < len - 1; j++)  ret.push(arr[j].pop())
+      arr = arr.filter(v => v.length)
+      if (!len) return
+      // 下
+      for (; i > -1; i--)  ret.push(arr[len - 2][i])
+      arr.pop()
+      if (!len) return
+      // 左
+      for (j = len - 3; j > -1; j--) ret.push(arr[j].shift())
+      arr = arr.filter(v => v.length)
+      if (!len) return
+      circle(arr) // 类似剥洋葱处理，继续递归
   }
-
-  return circle(matrix, [])
-
+  circle(matrix)
+  return ret
 };
