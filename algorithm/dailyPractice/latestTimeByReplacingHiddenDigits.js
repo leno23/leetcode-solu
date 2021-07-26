@@ -12,16 +12,16 @@
  * @param {string} time
  * @return {string}
  */
- var maximumTime = function (time) {
-  let arr = time.split('')  // 字符串不支持修改
+var maximumTime = function (time) {
+  let arr = time.split(""); // 字符串不支持修改
   // 四个会出现?的位置逐个进行逻辑判断
   // 小时的十位，如果个位数字不小于4，则最大为1，否则为2
-  if (arr[0] == '?') arr[0] = arr[1] >= 4 ? '1' : '2'
+  if (arr[0] == "?") arr[0] = arr[1] >= 4 ? "1" : "2";
   // 小时的个位，如果十位为2，(24:00按照00:00处理，不可取)最大为3，否则为9
-  if (arr[1] == '?') arr[1] = arr[0] == '2' ? '3' : '9'
+  if (arr[1] == "?") arr[1] = arr[0] == "2" ? "3" : "9";
   // 分钟的十位最大为9
-  if (arr[3] == '?') arr[3] = 5
+  if (arr[3] == "?") arr[3] = 5;
   // 分钟的个位最大为9
-  if (arr[4] == '?') arr[4] = 9
-  return arr.join('')
+  if (arr[4] == "?") arr[4] = 9;
+  return arr.join("");
 };

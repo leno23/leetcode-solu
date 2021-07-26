@@ -16,8 +16,8 @@ nums 中每个元素 恰好 在 一个 数对中，且
  * @param {number[]} nums
  * @return {number}
  */
- var minPairSum = function (nums) {
-  nums.sort((a, b) => b - a)
+var minPairSum = function (nums) {
+  nums.sort((a, b) => b - a);
   let ans = 0;
   // 数对和即一对数的和，也就是 两个数字的和
   // 一个有偶数个数n的数组可以被划分成n/2个数对，最大的数对和当然是
@@ -28,8 +28,8 @@ nums 中每个元素 恰好 在 一个 数对中，且
   // 最终，可以想到一种方法，就是让数组中最大值和最小值配对，第二大值和第二小值配对，...
   // 这样可以保证配对出的数对的最大和最小
   // 例如 3 5 2 3  排序后为5 3 3 2，可以让5,2、3,3配对，这样所有数对和的最大值就会最小啦
-  for (let i = 0; i < nums.length >> 1; i ++) {
-      ans = Math.max(nums[i] + nums[nums.length - i - 1], ans)
+  for (let i = 0; i < nums.length >> 1; i++) {
+    ans = Math.max(nums[i] + nums[nums.length - i - 1], ans);
   }
-  return ans
+  return ans;
 };

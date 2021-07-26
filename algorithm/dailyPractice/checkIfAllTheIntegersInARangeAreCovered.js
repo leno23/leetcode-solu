@@ -17,19 +17,19 @@
  * @param {number} right
  * @return {boolean}
  */
- var isCovered = function (ranges, left, right) {
-  let diff = Array(52).fill(0);   // 差分数组
+var isCovered = function (ranges, left, right) {
+  let diff = Array(52).fill(0); // 差分数组
   for (let range of ranges) {
-      ++diff[range[0]];
-      --diff[range[1] + 1];
+    ++diff[range[0]];
+    --diff[range[1] + 1];
   }
   // 前缀和
   let curr = 0;
   for (let i = 1; i <= 50; ++i) {
-      curr += diff[i];
-      if (i >= left && i <= right && curr <= 0) {
-          return false;
-      }
+    curr += diff[i];
+    if (i >= left && i <= right && curr <= 0) {
+      return false;
+    }
   }
   return true;
 };
