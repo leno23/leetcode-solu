@@ -19,25 +19,25 @@
  * @param {character[]} chars
  * @return {number}
  */
- var compress = function (chars) {
+var compress = function (chars) {
     // 特判
-    if (chars.length == 1) return 1
-    let c = [...chars] // 浅拷贝一份原数组
-    chars.length = 0
-    let s = []
+    if (chars.length == 1) return 1;
+    let c = [...chars]; // 浅拷贝一份原数组
+    chars.length = 0;
+    let s = [];
     // 记录其中各个元素及出现的次数
     for (let v of c) {
-        let l = s[s.length - 1]
-        if (l && l[0] == v) l[1]++
-        else s.push([v, 1])
+        let l = s[s.length - 1];
+        if (l && l[0] == v) l[1]++;
+        else s.push([v, 1]);
     }
     // 将出现字符以及出现次数重新放到chars数组中
     for (let [v, count] of s) {
         if (count == 1) {
-            chars.push(v)
-            continue
+            chars.push(v);
+            continue;
         }
-        chars.push(...(count + '').split(''))
+        chars.push(...(count + "").split(""));
     }
-    return chars.length
+    return chars.length;
 };
