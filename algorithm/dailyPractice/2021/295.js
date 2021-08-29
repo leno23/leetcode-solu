@@ -89,7 +89,7 @@ MedianFinder.prototype.addNum = function (num) {
 
     // 小数不能比大数多2个
     if (greater.size() > less.size() + 1) less.push(greater.pop());
-
+    
     return;
 };
 
