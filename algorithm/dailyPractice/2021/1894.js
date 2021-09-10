@@ -13,20 +13,27 @@
 请你返回需要 补充 粉笔的学生 编号 。
 
 */
-var chalkReplacer = function (chalk, k) {
-    const n = chalk.length;
-    let total = 0;
-    for (const num of chalk) {
-        total += num;
-    }
-    k %= total;
-    let res = -1;
-    for (let i = 0; i < n; ++i) {
-        if (chalk[i] > k) {
-            res = i;
-            break;
+/**
+ * @param {number[]} chalk
+ * @param {number} k
+ * @return {number}
+ */
+ var chalkReplacer = function (chalk, k) {
+    let pre = [...chalk]
+    // 前缀和数组
+    for (let i = 1; i < chalk.length; i++) pre[i] += pre[i - 1]
+    let rest = k % pre[pre.length - 1]  // n轮之后剩余的粉笔，在下一轮会使用完
+    // 在前缀和数组中使用二分找到一个大于等于rest的元素下标，即为粉笔使用完的学生编号
+    let left = 0, right = pre.length - 1, mid
+    while (left < right) {
+        mid = ((right - left) >> 1) + left
+        if (pre[mid] < rest) {
+            left = mid + 1
+        } else if (pre[mid] == rest) {
+            return mid + 1
+        } else {
+            right = mid
         }
-        k -= chalk[i];
     }
-    return res;
+    return left
 };
