@@ -19,14 +19,16 @@
  * @return {boolean}
  */
 var isValidSudoku = function (board) {
-    // 记录每行中十个数字出现的个数
+    // 记录每行中9个数字出现的个数
     let rows = Array(9)
         .fill()
         .map(() => Array(9).fill(0));
+    // 记录每列中9个数字出现的个数
     let cols = Array(9)
         .fill()
         .map(() => Array(9).fill(0));
 
+    // 记录每个单元格中十个数字出现的个数
     let cells = Array(3)
         .fill()
         .map(() =>
@@ -34,8 +36,6 @@ var isValidSudoku = function (board) {
                 .fill()
                 .map(() => Array(9).fill(0))
         );
-    // 记录每列中十个数字出现的个数
-    // 记录每个单元格中十个数字出现的个数
     for (let i = 0; i < 9; i++) {
         for (let j = 0; j < 9; j++) {
             if (board[i][j] != ".") {
@@ -43,6 +43,7 @@ var isValidSudoku = function (board) {
                 rows[i][ind]++;
                 cols[j][ind]++;
                 cells[(i / 3) | 0][(j / 3) | 0][ind]++;
+                // 若行列或单元格一个数字出现两次,则不是数独
                 if (
                     rows[i][ind] > 1 ||
                     cols[j][ind] > 1 ||
