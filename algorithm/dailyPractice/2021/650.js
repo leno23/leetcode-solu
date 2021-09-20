@@ -13,12 +13,19 @@ Paste（粘贴）：粘贴 上一次 复制的字符。
  */
 var minSteps = function (n) {
     let f = Array(n + 1).fill(0);
+    // 由于f[0]=0 f[1]=0，所以从2开始
     for (let i = 2; i <= n; ++i) {
-        f[i] = Number.MAX_SAFE_INTEGER;
+        f[i] = 1000;
+        // 想要操作次数最少，则需要使用因数来进行粘贴
+        // 找到i中的因数，求出使用每个因数来粘贴的最小数，即为最终所求
+        // 一个数的因数中,小数和大数的范围分别是[0,√i] [√i,i]
+        // 一个数i的因数中较小数的范围是[0,√i]
+        // 遍历所有的因数对
         for (let j = 1; j * j <= i; ++j) {
             if (i % j == 0) {
-                f[i] = Math.min(f[i], f[j] + i / j);
-                f[i] = Math.min(f[i], f[i / j] + j);
+                // 说明j为i的因数，则另外一个因数为i/j
+                // 分别使用i、j来进行copy操作，结果取小值
+                f[i] = Math.min(f[i], f[i / j] + j, f[j] + i / j);
             }
         }
     }
