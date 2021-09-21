@@ -8,12 +8,12 @@
  * @param {number} k
  * @return {number[]}
  */
- var smallestK = function (arr, k) {
-    let q = new MinPriorityQueue()
-    for (let v of arr) {
-        q.enqueue(v)
-    }
-    let ret = []
-    while (k--) ret.push(q.dequeue().element)
-    return ret
+var smallestK = function (arr, k) {
+  let q = new MinPriorityQueue();
+  for (let v of arr) {
+    q.enqueue(v);
+  }
+  let ret = [];
+  while (k--) ret.push(q.dequeue().element);
+  return ret;
 };
