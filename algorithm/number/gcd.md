@@ -6,3 +6,13 @@ function gcd(a, b) {
     return a;
 }
 ```
+假设b、a%b的最大公约数为c
+
+则  b=k1*c 
+    a%b = k2*c
+又 a - kb = a%b (k是一个非负数)   
+    a-kb = k2*c
+    a=k2*c + kb = k2*c +k*k1*c = (k2+k*k1)c
+而且 b=k1*c    
+因此,c同时也是a、b的公约数
+
