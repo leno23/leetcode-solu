@@ -3,7 +3,8 @@ class Node {
   constructor() {
     this.next = []
     this.flag = false
-    for (let i = 0; i < BASE; i++) this.next[i] = null
+    for (let i = 0; i < BASE; i++)
+      this.next[i] = null
   }
 }
 class Trie {
@@ -32,11 +33,29 @@ class Trie {
     }
     return p.flag
   }
+  __output(root, s) {
+    if (root == null) return
+    if (root.flag) console.log(`find:  ${s}`)
+    for (let i = 0; i < BASE; i++) {
+      this.__output(
+        root.next[i],
+        s + String.fromCharCode(97 + i)
+      )
+    }
+  }
+  output() {
+    let s = '' // 当前节点的前缀路径f
+    this.__output(this.root, s)
+  }
 }
 let t = new Trie()
 console.log(t.search('a'))
 t.insert('hello')
+t.insert('tom')
+t.insert('jack')
+t.insert('jac')
 
 console.log(t.search('hello'))
-console.log(JSON.stringify(t,null,1))
+console.log(JSON.stringify(t, null, 0))
 console.log(t.search('hell'))
+t.output()
