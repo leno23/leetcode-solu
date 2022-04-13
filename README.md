@@ -26,6 +26,8 @@ tags: []
         - [KMP算法](https://github.com/leno23/leetcode-solu/blob/main/algorithm/stringMatch/kmp.js)
         - [sunday算法](https://github.com/leno23/leetcode-solu/blob/main/algorithm/stringMatch/sunnday.js)
         - [Shift And算法](https://github.com/leno23/leetcode-solu/blob/main/algorithm/stringMatch/shift_and.js)
+    - 编译原理
+        - [super tiny compiler](https://github.com/leno23/leetcode-solu/blob/main/algorithm/compiler/the-super-tiny-compiler.js)
 
 LeetCode-Javascript
 ========
