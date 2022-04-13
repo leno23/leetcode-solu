@@ -29,7 +29,7 @@ LeetCode-Javascript
 
 | # | Title | javascript | Difficulty |
 |---| ----- | ---------- | ---------- |
-|0001| [Two Sum                                                     ||Easy|
+|0001| Two Sum                                                     ||Easy|
 |0002|[Add Two Numbers](https://leetcode.com/problems/add-two-numbers/) ||Medium|
 |0003|[Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/) ||Medium|
 |0004|[Median of Two Sorted Arrays](https://leetcode.com/problems/median-of-two-sorted-arrays/) ||Hard|
