@@ -24,6 +24,22 @@ class Trie {
     // flag代表是否是第一次插入单词
     return true
   }
+  match(s){
+    let ret = [],cnt = 0
+    for(let i=0;i<s.length;i++){
+      let p =this.root
+      cnt++
+      for(let j=i;s[j];j++){
+        let ind = s[j].charCodeAt()-97
+        if(p.next[ind]==null) break
+        p=p.next[ind]
+        cnt++
+        if(p.flag) ret.push(s.substr(i,j-i+1))
+      }
+    }
+    console.log('total operator:',cnt)
+    return ret
+  }
   search(word) {
     let p = this.root
     for (let x of word) {
@@ -50,12 +66,15 @@ class Trie {
 }
 let t = new Trie()
 console.log(t.search('a'))
-t.insert('hello')
-t.insert('tom')
-t.insert('jack')
-t.insert('jac')
+t.insert("say");
+t.insert("she");
+t.insert("shr");
+t.insert("he");
+t.insert("her");
 
-console.log(t.search('hello'))
-console.log(JSON.stringify(t, null, 0))
-console.log(t.search('hell'))
-t.output()
+// console.log(t.search("hello"));
+// console.log(JSON.stringify(t, null, 2));
+console.log(t.match("sasherhs"));
+// console.log(JSON.stringify(t, null, 2))
+// console.log(t.search('hell'))
+// t.output()
