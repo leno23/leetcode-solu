@@ -1,4 +1,5 @@
 剑指 Offer II 012. 左右两边子数组的和相等
+
 给你一个整数数组 nums ，请计算数组的 中心下标 。
 
 数组 中心下标 是数组的一个下标，其左侧所有元素相加的和等于右侧所有元素相加的和。
@@ -17,3 +18,19 @@
 中心下标是 3 。
 左侧数之和 sum = nums[0] + nums[1] + nums[2] = 1 + 7 + 3 = 11 ，
 右侧数之和 sum = nums[4] + nums[5] = 5 + 6 = 11 ，二者相等。
+```js
+var pivotIndex = function (nums) {
+    let pre = [0], n = nums.length
+    // 前缀和数组pre[i]代表数组nums中前i项的和
+    for (let i = 0; i < n; i++) pre[i + 1] = pre[i] + nums[i]
+    // 遍历每个位置
+    for (let i = 0; i < n; i++) {
+        // 下标从0开始，所以第i个位置以及它前面数字和为 pre[i+1]
+        // 0 1 2    i=2 pre[i] = 0 + 1
+        
+        // 如果当前位置前面数字的和= 当前数字后面数字的和
+        if (pre[i] == pre[n] - pre[i + 1]) return i
+    }
+    return -1
+};
+```
