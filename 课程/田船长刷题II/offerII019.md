@@ -15,6 +15,7 @@
  */
 var validPalindrome = function (s) {
     let n = s.length, l = 0, r = n - 1
+    // 检查字符串l~r是否回文
     const check = (l, r) => {
         while (l < r) {
             if (s[l] == s[r]) l++, r--
@@ -27,8 +28,10 @@ var validPalindrome = function (s) {
         if (s[l] == s[r]) {
             l++, r--
         } else {
+            // 尝试删除l或者r位置字符，看剩下字符是否回文
             return check(l + 1, r) || check(l, r - 1)
         }
     }
+    // 原字符串回文或者空字符串
     return true
 };
