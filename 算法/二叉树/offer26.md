@@ -24,3 +24,13 @@ B是A的子结构， 即 A中有出现和B相同的结构和节点值。
 输入：A = [1,2,3], B = [3,1]
 输出：false
 ```js
+var isSubStructure = function (A, B) {
+    const check = (a, b) => {
+        if (b == null) return 1
+        if (a == null) return 0
+        return a.val == b.val && check(a.left, b.left) && check(a.right, b.right)
+    }
+    if (A == null || B == null) return 0
+    if (A.val === B.val && check(A, B)) return 1
+    return isSubStructure(A.left, B) || isSubStructure(A.right, B)
+};
