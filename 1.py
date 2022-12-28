@@ -1,8 +1,26 @@
-# s=input()
+n=int(input())
+s=input()
 
-# if s[0].isupper() and s[-1].isupper() and len(s)==8 and s[1:-1].isnumeric() and int(s[1:7])<=999999 and int(s[1:7]) >=100000:
-#     print('Yes')
-# else:
-#     print('No')
-from math import comb,e,factorial
-print(1_0000_000_7)
+c1,c2=0,0
+for i in range(3):
+    if s[i]=='G': c1+=1
+    else: c2+=1
+    i+=1
+r=0
+if c1==2 or c2==2: r+=1
+
+
+i=0
+
+
+while i+3 < n:
+    if s[i]=='G': c1-=1
+    else: c2-=1
+
+    if s[i+3]=='G': c1+=1
+    else: c2+=1
+
+    if c1==2 or c2==2: r+=1
+
+    i+=1
+print(r)
