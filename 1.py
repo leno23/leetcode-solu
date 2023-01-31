@@ -1,1 +1,2 @@
-print('{:.2f}'.format(12))
+for i in range(100):
+    print(i,end=" ")
