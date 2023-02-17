@@ -19,3 +19,5 @@ while l<r:
         l=m+1
     else: r=m
 print(l)
+
+print([1,7].pop())
