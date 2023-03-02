@@ -53,3 +53,31 @@ impossible
 ```
 
 ```py
+n,m,k=[int(x) for x in input().split()]
+
+d=[[0x3f3f3f3f]*(n+1) for i in range(n+1)]
+def floyd():
+    # d[k][i][j]从i到j经过1~k这些点的最短距离
+    # 从i到j经过1~k点的距离 = 从i到k经过1~k-1点的距离 + 从k到j经过1~k-1点的距离
+    # d[k][i][j]=  d[k-1][i][k] + d[k-1][k][j]
+    # k只和k-1项有关，可以优化掉
+    for k in range(1,n+1):
+        for i in range(1,n+1):
+            for j in range(1,n+1):
+                d[i][j]=min(d[i][j],d[i][k]+d[k][j])
+                
+for i in range(1,n+1): d[i][i]=0
+
+for i in range(m):
+    a,b,w=[int(x) for x in input().split()]
+    d[a][b]=min(d[a][b],w)
+    
+floyd()
+for i in range(k):
+    a,b=[int(x)for x in input().split()]
+    if d[a][b]>0x3f3f3f3f/2: print('impossible')
+    else: print(d[a][b])
+    
+    
+    
+    
