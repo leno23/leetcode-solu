@@ -102,6 +102,7 @@ for i in range(n):
         if j>0 and g[i][j-1]=='O': merge(i*m+j,i*m+j-1)
 # 所有边界只有一个的连通块的 [元素数量，连通块id]信息
 ret=[]
+maxCnt=0
 for i in range(n):
     for j in range(m):
         # 获取到当前点的连通块id
@@ -109,16 +110,22 @@ for i in range(n):
         if g[i][j]=='O' and ind==i*m+j:
             # 上面在合入到连通块中时，没有检查第一个元素是否是边界元素，此处进行检查
             # 如果是，同样更新连通块的边界元素的数量
-            if check(ind//m,ind%m):  cnt2[ind]+=1
+            if check(ind//m,ind%m): 
+                cnt3[ind]=[ind//m,ind%m]
+                cnt2[ind]+=1
             # 如果连通块只有一个边界元素的话，加入到结果中
-            if cnt2[ind]==1: ret.append([cnt[ind],ind])
-ret.sort(reverse=True) # 按照连通块的元素数量降序排序
+            if cnt2[ind]==1:
+                x,y=cnt3[ind]
+                if cnt[ind]>maxCnt:
+                    ret=[[x,y,cnt[ind]]]
+                    maxCnt=cnt[ind]
+                elif cnt[ind]==maxCnt:
+                    ret.append([x,y,cnt[ind]])
 if len(ret)==0: print('NULL')
 # 只有一个连通块或者有两个元素数量不同的，则取第一个作为答案
 elif len(ret)==1 or ret[0][0]>ret[1][0]: 
-    c,ind=ret[0]
-    x,y=cnt3[ind]
-    print(x,y,c)
+    x,y,cnt=ret[0]
+    print(x,y,cnt)
 # 有多个连通块，但是元素个数相同，则输出符合条件的连通块的数量
-elif ret[0][0]==ret[1][0]:
-    print(ret[0][0])
+else:
+    print(maxCnt)
