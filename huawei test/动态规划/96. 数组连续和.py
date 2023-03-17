@@ -1,3 +1,4 @@
+'''
 标题：数组连续和|时间限制：1s|内存限制：65536k|语言限制：不限
 给定一个含有N个正整数的数组，求出有多少个连续区间（包括单个正整数），他们的和大于等于x。
 输入描述
@@ -19,3 +20,24 @@
 1 2 3 4 5 6 7 8 9 10 
 输出
 0
+'''
+n,x=map(int,input().split())
+arr = [int(x) for x in input().split()]
+pre=[0]*n
+# pre前缀和 以第i项结尾的最大和
+pre[0]=arr[0]
+for i in range(1,n): pre[i]=pre[i-1]+arr[i]
+cnt=0
+for i in range(n):
+    if pre[i]==x: cnt+=1
+    if pre[i]>x:
+        # 从i到0枚举所有开始位置start，看start~i区间数字和是否满足
+        for start in range(i,-1,-1):
+            # start~i项的和
+            sm=pre[i]
+            if start>0: sm-=pre[start-1]
+            if sm>=x:
+                cnt+=start+1
+                break
+print(cnt)
+
