@@ -49,7 +49,9 @@ ababa
 0 2
 ```
 
+![](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/442d1ab3ea404939be9f4b3a75a90518~tplv-k3u1fbpfcp-watermark.image)
 
+**s和p逐位对比时，在s[i]和p[j+1]发生失配后，i指针可以不动，只需要j指针移动到前面的下一个需要匹配的位置即可，具体哪个位置和p的0~j部分的最长相同前后缀的长度有关**
 ```py
 n=int(input())
 # 输入字符向后偏移一位处理
