@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>002-拖放排序</title>
+    <style>
+        .continer {
+            margin-top: 20px;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .target {
+            background-color: blueviolet;
+            border-radius: 2px;
+            color: white;
+            height: 50px;
+            width: 360px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: move;
+            position:absolute;
+            top:0;  
+            transition: transform 300ms;
+        }
+
+        .moving {
+            background: transparent;
+            border: 1px dashed #ccc;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="continer">
+        <div draggable='true' data-sort='0' class="target">1</div>
+        <div draggable='true' data-sort='1' class="target">2</div>
+        <div draggable='true' data-sort='2' class="target">3</div>
+        <div draggable='true' data-sort='3' class="target">4</div>
+        <div draggable='true' data-sort='4' class="target">5</div>
+    </div>
+</body>
+<script>
+    const con = document.querySelector('.continer')
+    let offset = 20; // 上边距
+    const targets = document.querySelectorAll('.target')
+    for (let i = 0; i < 5; i++) {
+        targets[i].style.transform = `translateY(${i * 60}px)`
+    }
+    let dragItem = null;
+    con.ondragstart = e => {
+        dragItem = e.target
+        setTimeout(() => {
+            e.target.classList.add('moving')
+        })
+        // 设置拖动时图标
+        e.dataTransfer.effectAllowed = 'move';
+    }
+    let moving = [];
+    con.ondragover = e => {
+        e.preventDefault()
+        let { target } = e;
+
+        // 防止因动画导致 同一个被拖放元素和目标元素之间触发
+        if (moving[0] === target.dataset.sort && moving[1] === dragItem.dataset.sort) {
+            return;
+        }
+
+        // 当被拖放元素在其他元素之上时才处理，并且不是被拖放元素时
+
+        if ((e.target == con || e.target == dragItem)) return false
+        const { y, height } = target.getBoundingClientRect()
+        if (e.clientY > y + height / 2) {
+            // 获取目标元素下方元素，在它的下方插入
+            target = document.querySelector(`[data-sort='${+target.dataset.sort + 1}']`)
+        }
+        // 交换被拖放元素与目标元素的坐标信息
+        [target.style.transform, dragItem.style.transform] = [dragItem.style.transform, target.style.transform];
+        // 交换它们的顺序
+        [target.dataset.sort, dragItem.dataset.sort] = [dragItem.dataset.sort, target.dataset.sort]
+        // 动画结束，允许再次同一个被拖放元素和目标元素
+        target.ontransitionend = () => {
+            moving = []
+        };
+        // 防止因动画导致 同一个被拖放元素和目标元素之间触发，这里记住它
+        moving = [target.dataset.sort, dragItem.dataset.sort];
+    }
+    // 拖放结束时
+    con.ondragend = (e) => {
+        dragItem = null;
+        e.target.classList.remove('moving')
+    };
+
+</script>
+
+</html>
