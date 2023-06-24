@@ -64,3 +64,28 @@ var insert = function (head, insertVal) {
   return head
 }
 ```
+
+```py
+class Solution:
+    def insert(self, head: 'Node', insertVal: int) -> 'Node':
+        p=head
+        new_node = Node(insertVal)
+        # 单个节点需要形成自环
+        if not p:
+            new_node.next=new_node
+            return new_node
+        nex=p.next
+        # 两个指针一前一后向后走，如果下一步走到head，说明已经走了一圈了
+        while nex!= head:
+            # 如果带插入节点在p和nex之间，即p.val < insertVal < nex.val
+            if p.val < insertVal and insertVal < nex.val: break
+            # 如果p是链表的最大节点，那么nex就是链表的最小节点
+            # 如果insertVal大于最大节点或者小于最小节点，也要插入到中间
+            # 比如 2 3 4 插入 5 或者 1
+            if p.val > nex.val and (insertVal < nex.val or insertVal > p.val): break
+            p=p.next
+            nex=nex.next
+        # 要从p后面增加new_node节点
+        p.next = new_node
+        new_node.next=nex
+        return head
