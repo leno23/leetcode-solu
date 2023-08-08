@@ -21,3 +21,5 @@ echo "$XYZ"
 ~
 ~
 ~
+
+# sh 2.bash blog nodejs 39.106.44.208 @wW782625077
