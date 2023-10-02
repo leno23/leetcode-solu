@@ -1,0 +1,17 @@
+{
+  "name": "leetcode-solu",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint --ext .ts,.jsx,.tsx --fix --quiet ./packages"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^17.7.2",
+    "commitlint": "^17.7.2",
+    "husky": "^8.0.3"
+  }
+}
