@@ -57,14 +57,34 @@ eslint-plugin-prettier 用prettier来接管修复代码即 eslint --fix
 ### 规范检查
 安装husky，用于拦截commit命令
 `pnpm i husky -D -w`
+
 初始化husky
 `npx husky install`
+
 将刚才实现的格式化命令pnpm lint纳入commit时husky将执行的脚本
 `npx husky add .husky/pre-commit "pnpm lint"`
 > todo: pnpm lint会对代码进行全量检查，当项目复杂后执行速度比较慢，届时可以考虑用lint-staged，实现只对暂存区代码进行检查
 
 通过commitlint对git提交信息进行检查，首先安装必要的库
 `pnpm i commitlint @commitlint/cli`
+
 新建配置文件 .commitlintrc.js
 ```js
+module.exports = {
+  extends: ['@commitlint/config-conventional']
+}
 ```
+
+集成到husky中
+`npx husky add .husky/commit-msg "npx --no-install commitlint -e $HUSKY_GIT_PARAMS"`
+
+commitlint规范意义
+`<type>: <subject>`
+常见type值包括如下
+feat: 添加新功能
+fix: 修复Bug
+chore: 一些不影响功能的更改
+docs: 文档的修改
+pref: 性能方面的修改
+refactor: 代码重构
+test: 添加一些测试代码
