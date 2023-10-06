@@ -1,3 +1,4 @@
+import { Dispatch } from 'react/src/currentDispatcher';
 import { Action } from 'shared/ReactTypes';
 
 export interface Update<State> {
@@ -7,6 +8,7 @@ export interface UpdateQueue<State> {
 	shared: {
 		pending: Update<State> | null;
 	};
+	dispatch: Dispatch<State> | null;
 }
 
 export const createUpdate = <State>(action: Action<State>): Update<State> => {
@@ -19,7 +21,8 @@ export const createUpdateQueue = <State>() => {
 	return {
 		shared: {
 			pending: null
-		}
+		},
+		dispatch: null
 	} as UpdateQueue<State>;
 };
 
@@ -30,14 +33,13 @@ export const enqueueUpdate = <State>(
 	updateQueue.shared.pending = update;
 };
 
-
 // updateQueue消费update
 export const processUpdateQueue = <State>(
-    // 初始状态和要消费的update
+	// 初始状态和要消费的update
 	baseState: State,
 	pendingUpdate: Update<State> | null
-    // 返回全新的状态
-): { memoizedState: State } => { 
+	// 返回全新的状态
+): { memoizedState: State } => {
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
 		memoizedState: baseState
 	};

@@ -1,11 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 
 
 const App = () => {
+  const [num] = useState(100)
   return (
     <div>
-      <Child />
+      {num}
+      {/* <Child /> */}
     </div>
   )
 }
