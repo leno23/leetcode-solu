@@ -202,3 +202,11 @@ commit阶段的三个子阶段
 需要注意
 - 兼容原版React的导出
 - 处理HostConfig的指向
+
+### 初探FC与实现 第二种调试方式
+FunctionComponent需要考虑的问题
+- 如何支持FC    beginWork completeWork
+- 如何组织Hooks
+  
+第二种调试方式
+采用Vite的实时调试，他的好处是【实时看到源码运行效果】
