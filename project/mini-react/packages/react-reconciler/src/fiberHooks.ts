@@ -34,6 +34,7 @@ export function renderWithHooks(wip: FiberNode) {
 		// update
 	} else {
 		// mount
+		// 对应mount阶段对应的hooks实现的集合，
 		currentDispatcher.current = HooksDispatcherOnMount;
 	}
 

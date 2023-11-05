@@ -6,7 +6,8 @@
 	"scripts": {
 		"lint": "eslint --ext .ts,.jsx,.tsx --fix --quiet ./packages",
 		"build:dev": "rm -rf dist && rollup --bundleConfigAsCjs --config scripts/rollup/dev.config.js",
-		"demos": "vite serve demos/test-fc --config scripts/vite/vite.config.js --force"
+		"demos": "vite serve demos/test-fc --config scripts/vite/vite.config.js --force --open",
+		"test":"jest --config scripts/jest/jest.config.js"
 	},
 	"keywords": [],
 	"author": "",

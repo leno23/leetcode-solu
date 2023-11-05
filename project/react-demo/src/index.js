@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 
 // const jsx = (
@@ -7,8 +7,11 @@ import ReactDOM from 'react-dom'
 //   </div>
 // )
 const App = () => {
+  const [num, setNum] = useState(111)
+  window.setNum = setNum
   return (
     <div>
+      {num}
       <Child />
     </div>
   )
