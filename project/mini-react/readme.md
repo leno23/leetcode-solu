@@ -210,3 +210,38 @@ FunctionComponent需要考虑的问题
   
 第二种调试方式
 采用Vite的实时调试，他的好处是【实时看到源码运行效果】
+
+第三种调试方式
+`pnpm install -D -w jest jest-config jest-environment-jsdom`
+jest-config  jest的官方默认配置
+jest-environmenttype-jsdom 调试DOM环境
+
+# 初探update流程
+update流程和mount流程的区别
+- 对于beginWork
+需要处理ChildDeletion的情况
+需要处理节点移动的情况(abc->bca)
+
+- 对于completeWork
+需要处理HostText内容更新的情况
+需要处理HostComponent属性变化的情况
+
+- 对于commitWork
+对于ChildDeletion 需要遍历被删除的子树
+
+对于useState
+实现相对于mountState和updateState
+
+beginWork流程
+本节课仅处理单一节点，所以省去了【节点移动】的情况，我们需要处理
+singleElement
+singleTextNode
+处理流程为
+1.比较是否可以复用current fiber
+比较key 如果key不同 不复用
+比较type 如果type不同 不复用
+比较props 如果props不同 不复用
+如果都相同 复用current fiber
+
+2.如果不复用current fiber 则创建新的fiberNode，可以复用则复用旧的
+注意：对于同一个fiberNode即使反复更新，current、wip这两个fiberNode会重复使用

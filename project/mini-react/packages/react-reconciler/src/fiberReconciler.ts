@@ -21,7 +21,7 @@ export function updateContainer(
 	enqueueUpdate(
 		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
 		update
-	);
+	);                                                                                                                                                        
     scheduleUpdateOnFiber(hostRootFiber)
 	return element;
 }

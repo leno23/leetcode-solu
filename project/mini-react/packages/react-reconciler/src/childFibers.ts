@@ -6,6 +6,25 @@ import { Placement } from './fiberFlags';
 
 function childReconciler(shouldTrackEffect: boolean) {
     function reconcileSingleElement (returnFiber:FiberNode,currentFiber:FiberNode|null,element:ReactElementType) {
+        function deleteChild (returnFiber:FiberNode) {
+            
+        }
+        const key = element.key
+        if(currentFiber !== null){
+            if(currentFiber.key === key){
+                if(element.$$typeof === REACT_ELEMENT_TYPE){
+                    if(currentFiber.type ===element.type){
+
+                    }
+                }
+            }else{
+                if(__DEV__){
+                    console.warn('还未实现的react类型',element);
+                    return
+                    
+                }
+            }
+        }
         const fiber = createFiberFromElement(element)
         fiber.return = returnFiber
         return fiber
