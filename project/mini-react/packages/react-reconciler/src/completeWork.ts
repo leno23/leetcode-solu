@@ -1,8 +1,11 @@
 import { appendInitialChild, createInstance, createTextInstance } from 'hostConfig';
 import { FiberNode } from './fiber';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
-import { NoFlags } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
 
+function markUpdate(fiber: FiberNode) {
+	fiber.flags += Update;
+}
 export const completeWork = (wip: FiberNode) => {
 	// 递归中的归
 	const newProps = wip.pendingProps;
@@ -19,24 +22,28 @@ export const completeWork = (wip: FiberNode) => {
 				appendAllChildren(instance, wip);
 				wip.stateNode = instance;
 			}
-			bubbleProperties(wip)
+			bubbleProperties(wip);
 			return null;
 		case HostText:
-            if (current !== null && wip.stateNode) {
+			if (current !== null && wip.stateNode) {
 				// update
+				const oldText = current.memoizedProps.content;
+				const newText = newProps.content;
+				if (oldText !== newText) {
+					markUpdate(wip)
+				}
 			} else {
 				// 1.构建dom
-				// 2.
 				const instance = createTextInstance(newProps.content);
 				wip.stateNode = instance;
 			}
-			bubbleProperties(wip)
+			bubbleProperties(wip);
 			return null;
 		case HostRoot:
-			bubbleProperties(wip)
+			bubbleProperties(wip);
 			return null;
 		case FunctionComponent:
-			bubbleProperties(wip)
+			bubbleProperties(wip);
 			return null;
 		default:
 			if (__DEV__) {
@@ -70,16 +77,15 @@ function appendAllChildren(parent: Element, wip: FiberNode) {
 	}
 }
 
+function bubbleProperties(wip: FiberNode) {
+	let subtreeFlags = NoFlags;
+	let child = wip.child;
+	while (child !== null) {
+		subtreeFlags |= child.subtreeFlags;
+		subtreeFlags |= child.flags;
 
-function bubbleProperties (wip:FiberNode) {
-    let subtreeFlags = NoFlags
-    let child = wip.child
-    while(child !== null){
-        subtreeFlags |=child.subtreeFlags
-        subtreeFlags |=child.flags
-
-        child.return = wip
-        child = child.sibling
-    }
-    wip.subtreeFlags |= subtreeFlags
+		child.return = wip;
+		child = child.sibling;
+	}
+	wip.subtreeFlags |= subtreeFlags;
 }

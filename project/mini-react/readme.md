@@ -229,10 +229,10 @@ update流程和mount流程的区别
 - 对于commitWork
 对于ChildDeletion 需要遍历被删除的子树
 
-对于useState
+- 对于useState
 实现相对于mountState和updateState
 
-beginWork流程
+## beginWork流程
 本节课仅处理单一节点，所以省去了【节点移动】的情况，我们需要处理
 singleElement
 singleTextNode
@@ -245,3 +245,20 @@ singleTextNode
 
 2.如果不复用current fiber 则创建新的fiberNode，可以复用则复用旧的
 注意：对于同一个fiberNode即使反复更新，current、wip这两个fiberNode会重复使用
+
+## completeWork流程
+主要处理[标记Update]的情况，本节课我们处理HostText内容更新的情况
+## commitWork流程
+对于标记ChildDeletion的子树，由于子树中
+- 对于FC，需要处理useEffect unmount执行  解绑ref
+- - 对于HostComponent，需要解绑ref
+- 对于子树的[根HostComponent], 需要移除DOM
+- 所以需要实现[遍历ChildDeletion子树]的流程
+
+## 对于useState
+需要实现
+- 针对update时的dispatcher
+- 实现对标mountWorkInProgress的updateWorkInProgressHook
+- 实现updateState中[计算新state的逻辑]
+其中updateWorkInPregressHook的实现需要考虑的问题
+- hook数据从哪里来
