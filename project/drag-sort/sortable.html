@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="list">
+    <div class="list_item" draggable="true">
+      1
+    </div>
+    <div class="list_item" draggable="true">
+      2
+    </div>
+    <div class="list_item" draggable="true">
+      3
+    </div>
+    <div class="list_item" draggable="true">
+      4
+    </div>
+    <div class="list_item" draggable="true">
+      5
+    </div>
+  </div>
+  <style>
+    .list {
+      width: 750px;
+      margin: 40px auto;
+    }
+
+    .list_item {
+      width: 100%;
+      border-radius: 5px;
+      height: 52px;
+      margin-bottom: 12px;
+      background: rgba(40, 142, 145, 0.9);
+      color: white;
+      line-height: 52px;
+      padding-left: 15px;
+      font-size: 18px;
+      box-sizing: border-box;
+      cursor: move;
+    }
+
+    .moving {
+      background: transparent;
+      color: transparent;
+      border: 1px dashed #ccc;
+    }
+  </style>
+  <script src="https://sortablejs.github.io/Sortable/Sortable.js"></script>
+  <script>
+    new Sortable(document.querySelector('.list'), {
+      animation: 150,
+      ghostClass: 'moving'
+    });
+  </script>
+  <!-- <script>
+    const list = document.querySelector('.list')
+    const item =
+      document.querySelectorAll('.list_item')
+    let sourceNode
+    list.ondragstart = (e) => {
+      sourceNode = e.target
+      record(item)
+      setTimeout(() => {
+        e.target.classList.add('moving')
+      }, 0)
+      e.dataTransfer.effectAllowed = 'move'
+    }
+    list.ondragover = (e) => {
+      e.preventDefault()
+    }
+    list.ondragenter = (e) => {
+      e.preventDefault()
+      if (
+        e.target === list ||
+        e.target == sourceNode
+      ) {
+        return false
+      }
+      const children = [...list.children]
+      const sourceIndex =
+        children.indexOf(sourceNode)
+      const targetIndex = children.indexOf(
+        e.target
+      )
+      console.log(sourceIndex, targetIndex  )
+      if (sourceIndex < targetIndex) {
+        list.insertBefore(
+          sourceNode,
+          e.target.nextElementSibling
+        )
+      } else {
+        list.insertBefore(sourceNode, e.target)
+      }
+      last([e.target, sourceNode])
+    }
+    list.ondragend = (e) => {
+      e.target.classList.remove('moving')
+    }
+    function record(eleAll) {
+      for (let i = 0; i < eleAll.length; i++) {
+        const dom = eleAll[i]
+        const { left, top } =
+          eleAll[i].getBoundingClientRect()
+        dom._top_ = top
+        dom._left_ = left
+      }
+    }
+    function last(eleAll) {
+      for (let i = 0; i < eleAll.length; i++) {
+        const dom = eleAll[i]
+        const { left, top } =
+          dom.getBoundingClientRect()
+        if (dom._left_) {
+          dom.style.transform = `translate3d(${dom._left_ - left
+            }px,${dom._top_ - top}px,0px)`
+          let rafId = requestAnimationFrame(
+            () => {
+              dom.style.transition =
+                'transform 300ms ease-out'
+              dom.style.transform = 'none'
+            }
+          )
+          dom.addEventListener(
+            'transitionend',
+            () => {
+              console.log('transitionend')
+              dom.style.transition = 'none'
+              cancelAnimationFrame(rafId)
+            }
+          )
+        }
+      }
+    }
+  </script> -->
+</body>
+
+</html>
