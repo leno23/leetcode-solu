@@ -19,7 +19,7 @@ function childReconciler(shouldTrackEffect: boolean) {
 			}
 		}
 		const key = element.key;
-		if (currentFiber !== null) {
+		work: if (currentFiber !== null) {
 			// update
 			if (currentFiber.key === key) {
 				if (element.$$typeof === REACT_ELEMENT_TYPE) {
@@ -27,15 +27,15 @@ function childReconciler(shouldTrackEffect: boolean) {
 						// 可复用
                         const existing = useFiber(currentFiber,element.props)
 						existing.return= returnFiber;
-                        return;
+                        return existing;
 					}
 					// 删除旧的
 					deleteChild(returnFiber, currentFiber);
-					return;
+					break work
 				} else {
 					if (__DEV__) {
 						console.warn('还未实现的react类型', element);
-						return;
+						break work
 					}
 				}
 			} else {
@@ -53,7 +53,7 @@ function childReconciler(shouldTrackEffect: boolean) {
                 existing.return = returnFiber
                 return existing
             }
-            deleteChild(returnFiber,)
+            deleteChild(returnFiber,currentFiber)
 
         }
         const fiber = new FiberNode(HostText, { content }, null);
@@ -84,6 +84,9 @@ function childReconciler(shouldTrackEffect: boolean) {
 
 		if (typeof newChild === 'string' || typeof newChild === 'number') {
 			return placeSingleChild(reconcileSingleTextNode(returnFiber, currentFiber, newChild));
+		}
+		if(currentFiber!==null){
+			deleteChild(returnFiber,currentFiber)
 		}
 		if (__DEV__) {
 			console.warn('未实现的reconciler类型', newChild);
