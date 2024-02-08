@@ -1,3 +1,4 @@
+
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
 import { UpdateQueue, processUpdateQueue } from './updateQueue';
@@ -10,6 +11,8 @@ import {
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 import { renderWithHooks } from './fiberHooks';
 
+
+// 不同组件的reconcile流程
 export const beginWork = (wip: FiberNode) => {
 	// 比较 返回子fiber node
 	switch (wip.tag) {
@@ -40,9 +43,9 @@ function updateHostRoot(wip: FiberNode) {
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>;
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
-	const { memoizedState } = processUpdateQueue(baseState, pending);
+	const { memorizedState } = processUpdateQueue(baseState, pending);
 
-	wip.memorizedState = memoizedState;
+	wip.memorizedState = memorizedState;
 	const nextChildren = wip.memorizedState;
 	reconcileChildren(wip, nextChildren);
 	return wip.child;

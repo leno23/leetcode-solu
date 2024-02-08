@@ -15,7 +15,7 @@ export class FiberNode {
 	index: number;
 	ref: Ref;
 	memorizedState: any;
-	memoizedProps: Props | null;
+	memorizedProps: Props | null;
 	alternate: FiberNode | null;
 	flags: Flags;
 	subtreeFlags: Flags
@@ -37,7 +37,7 @@ export class FiberNode {
 
 		// 作为工作单元
 		this.pendingProps = pendingProps;
-		this.memoizedProps = null;
+		this.memorizedProps = null;
 		this.memorizedState = null;
 		this.updateQueue = null;
 
@@ -81,7 +81,7 @@ export const createWorkInProgress = (
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;
 	wip.child = current.child;
-	wip.memoizedProps = current.memoizedProps;
+	wip.memorizedProps = current.memorizedProps;
 	wip.memorizedState = current.memorizedState;
 
 	return wip;

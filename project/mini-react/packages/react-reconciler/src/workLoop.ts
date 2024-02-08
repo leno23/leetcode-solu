@@ -97,7 +97,7 @@ function workLoop() {
 function performUnitOfWork(fiber: FiberNode) {
 	// 有子节点就遍历子节点
 	const next = beginWork(fiber);
-	fiber.memoizedProps = fiber.pendingProps;
+	fiber.memorizedProps = fiber.pendingProps;
 	if (next === null) {
 		// 没有子节点遍历兄弟节点
 		completeUnitOfWork(fiber);

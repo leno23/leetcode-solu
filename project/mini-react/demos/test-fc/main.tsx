@@ -5,12 +5,7 @@ import ReactDOM from 'react-dom/client'
 const App = () => {
   const [num, setNum] = useState(100)
   window.setNum = setNum
-  return (
-    <div>
-      {num}
-      {/* <Child /> */}
-    </div>
-  )
+  return num === 3 ? <Child/> : <div>{num}</div>
 }
 
 const Child = () => {

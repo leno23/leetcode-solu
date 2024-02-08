@@ -9,12 +9,8 @@ import ReactDOM from 'react-dom'
 const App = () => {
   const [num, setNum] = useState(111)
   window.setNum = setNum
-  return (
-    <div>
-      {num}
-      <Child />
-    </div>
-  )
+  debugger
+  return num == 3 ? <Child/> : <div>{num}</div>
 }
 
 const Child = () => {

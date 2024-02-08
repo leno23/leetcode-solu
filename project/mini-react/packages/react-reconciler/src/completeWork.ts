@@ -1,9 +1,9 @@
 import { appendInitialChild, createInstance, createTextInstance } from 'hostConfig';
 import { FiberNode } from './fiber';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
-import { NoFlags,Update } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
 
-const markUpdate(fiber:FiberNode){
+const markUpdate = (fiber: FiberNode) => {
 	fiber.flags |= Update
 }
 
@@ -26,11 +26,11 @@ export const completeWork = (wip: FiberNode) => {
 			bubbleProperties(wip)
 			return null;
 		case HostText:
-            if (current !== null && wip.stateNode) {
+			if (current !== null && wip.stateNode) {
 				// update
 				const oldText = current.memorizedProps.content
 				const newText = newProps.content
-				if(oldText != newText){
+				if (oldText != newText) {
 					markUpdate(wip)
 				}
 			} else {
@@ -80,15 +80,15 @@ function appendAllChildren(parent: Element, wip: FiberNode) {
 }
 
 
-function bubbleProperties (wip:FiberNode) {
-    let subtreeFlags = NoFlags
-    let child = wip.child
-    while(child !== null){
-        subtreeFlags |=child.subtreeFlags
-        subtreeFlags |=child.flags
+function bubbleProperties(wip: FiberNode) {
+	let subtreeFlags = NoFlags
+	let child = wip.child
+	while (child !== null) {
+		subtreeFlags |= child.subtreeFlags
+		subtreeFlags |= child.flags
 
-        child.return = wip
-        child = child.sibling
-    }
-    wip.subtreeFlags |= subtreeFlags
+		child.return = wip
+		child = child.sibling
+	}
+	wip.subtreeFlags |= subtreeFlags
 }
