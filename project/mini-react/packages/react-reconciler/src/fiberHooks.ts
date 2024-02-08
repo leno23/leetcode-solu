@@ -124,6 +124,7 @@ function mountWorkInProgressHook(): Hook {
 	return workInProgressHook;
 }
 function updateWorkInProgressHook(): Hook {
+	// 从当前fiber的alternate也就是currentFiber中，取到对应的Hook，创建新的Hook数据并返回
 	// TODO render阶段触发的更新
 	let nextCurrentHook: Hook | null
 	if (currentHook === null) {

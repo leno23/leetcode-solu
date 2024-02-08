@@ -285,12 +285,30 @@ update流程和mount流程的区别
   其中updateWorkInProgressHook的实现需要考虑的问题：
 - hook数据从哪里来
 - 交互阶段触发的更新
-`<div onClick={() => {udpate()}}></div>`
-- render阶段触发的更新
+  `<div onClick={() => {udpate()}}></div>`
+  """""
+
 ```js
-function App(){
-  const [num,update] = useState(0)  
-    // 触发更新
-  update(100)
+function App() {
+	const [num, update] = useState(0);
+	// 触发更新
+	update(100);
+	return <div>{num}</div>;
 }
 ```
+
+# 实现事件系统
+
+事件系统本质上是植根于浏览器事件模型，所以他隶属于ReactDOM，在实现时要做到对Reconciler 0侵入
+实现事件系统需要考虑：
+
+- 模拟实现浏览器事件捕获、冒泡流程
+- 实现合成事件对象
+- 方便后续扩展
+
+实现ReactDOM与Reconciler对接
+将事件回调保存在DOM中，通过以下两个时机对接
+
+- 创建DOM时
+- 更新属性时
+  模拟实现浏览器事件流程 事件系统.drawio
