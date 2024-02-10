@@ -312,3 +312,100 @@ function App() {
 - 创建DOM时
 - 更新属性时
   模拟实现浏览器事件流程 事件系统.drawio
+
+# 实现Diff算法
+
+当前仅实现单一节点的增删操作，即【单节点Diff算法】，本节课实现多节点Diff算法
+
+本节课采用简写实例: A1-> A2
+
+## 对于reconcileSingleElement的改动
+
+当前支持的情况
+
+- A1->B1 type变化
+- A1->A2 key变化
+
+需要支持的情况
+
+- ABC->A
+  **【单\多节点】是指【更新后是单\多节点】**
+  更细致的，我们需要区分4中情况
+- key相同，type相同==复用当前节点
+  例如: A1B2C3->A1
+- key相同，type不同==不存在任何复用的可能性
+  例如：A1B2C3->B1
+- key不同，type相同==当前节点不能复用
+- key不同，type不同--当前节点不能复用
+
+## 对于reconcileSingleTextNode的改动
+
+类似reconcileSingleElement
+
+## 对于同级多节点Diff的支持
+
+单节点需要支持的情况
+
+- 插入Placement
+- 删除ChildDeletion
+  多节点需要支持的情况
+- 插入Placement
+- 移除ChildDeletion
+- 移动Placement
+  整体流程分为4步
+- 将current中所有同级fiber保存在Map中
+- 遍历newChild数组，对于每个遍历到的element，存在两种情况
+  - 在Map中存在对应current fiber，且可以复用
+  - 在Map中不存在对应的current fiber，或不能复用
+- 判断是插入还是删除
+- 最后Map中剩下的都标记删除
+
+## 步骤2 -- 是否复用 详解
+
+首先，根据key从Map中获取current fiber，如果不存在current fiber，则没有复用的可能
+
+接下来，分情况讨论
+
+- element是HostText，current fiber是吗？
+- element是其他ReactElement，current fiber是吗
+- TODO element是数组组成Fragment，current fiber是吗
+
+```html
+<ul>
+  <li/>
+  <li/>
+  {[<li/>,<li/>]}
+</ul>
+
+
+<ul>
+  <li/>
+  <li/>
+  <>
+    <li/>
+    <li/>
+  </>
+</ul>
+```
+
+## 步骤3--插入/移动判断 详解
+
+【移动】具体是指向右移动
+移动的判断依据是 element的index与【element对应的current fiber】index的比较
+
+A1B2C3 -> B2C3A1
+0 1 2 0 1 2
+当遍历element时，【当前遍历的element】一定是【所有已遍历的element】中最靠右的那个
+所以只需要记录最后一个可复用fiber在current中的index(lastPlaceIndex),在接下来的遍历中
+
+- 如果接下来遍历到可复用fiber的index<lastPlaceIndex,则标记Placement
+- 否则，不标记
+
+## 移动操作的执行
+
+Placement同时对应
+
+- 移动
+- 插入
+  对于插入操作，之前对应的DOM方法是parentNode.appendChild，现在为了实现移动操作，需要支持parentNode.insertBefore
+  parentNode.insertBefore需要找到【目标兄弟】要考虑两个因素
