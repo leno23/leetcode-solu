@@ -701,3 +701,140 @@ Placement同时对应
 - 插入
   对于插入操作，之前对应的DOM方法是parentNode.appendChild，现在为了实现移动操作，需要支持parentNode.insertBefore
   parentNode.insertBefore需要找到【目标兄弟】要考虑两个因素
+
+## 13、实现Fragment
+
+为了提高组件结构的灵活性，需要实现Fragment，具体来说，需要区分几种情况
+
+### 1.Fragment包裹其他组件
+
+```html
+<>
+<div></div>
+<div></div>
+</>
+<!-- 对应DOM -->
+<div></div>
+<div></div>
+```
+
+这种情况的jsx转换结果
+
+```js
+jsxs(Fragment, {
+	children: [jsx('div', {}), jsx('div', {})]
+});
+```
+
+type为Fragment的ReactElement，对单一节点的Diff需要考虑Fragment的情况
+
+### Fragment与其他组件同级
+
+```html
+<ul>
+  <>
+    <li>1</li>
+    <li>2</li>
+  </>
+    <li>3</li>
+    <li>4</li>
+</ul>
+<!-- 对应DOM -->
+<ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+</ul>
+```
+
+这种情况的jsx转换结果
+
+```js
+jsxs('ul', {
+	children: [
+		jsxs(Fragment, {
+			children: [
+				jsx('li', {
+					children: '1'
+				}),
+				jsx('li', {
+					children: '2'
+				})
+			]
+		}),
+		jsx('li', { children: '3' }),
+		jsx('li', { children: '4' })
+	]
+});
+```
+
+children为数组类型，则进入reconcileChildrenArray方法,
+数组中的某一项为Fragment，所以需要增加【type为Fragment的ReactElement的判断】，同时beginWork中需要增加Fragment类型的判断
+
+### 数组形式的Fragment
+
+```html
+<!-- arr = [<li>c</li>,<li>d</li>] -->
+<ul>
+	<li>a</li>
+	<li>b</li>
+	{arr}
+</ul>
+<!-- 对应DOM -->
+<ul>
+	<li>a</li>
+	<li>b</li>
+	<li>c</li>
+	<li>d</li>
+</ul>
+```
+
+jsx转换结果是
+
+```js
+jsxs('ul', {
+	children: [
+		jsx('li', {
+			children: 'a'
+		}),
+		jsx('li', {
+			children: 'b'
+		}),
+		arr
+	]
+});
+```
+
+children为数组，则进入recondileChildrenArray方法，
+数组的某一项为数组，所以需要增加【reconcileCHildrenArray中数组类型的判断】
+
+### Fragment对childDeletion的影响
+
+childDeletion删除DOM的逻辑
+
+- 找到子树的根Host节点
+- 找到子树对应的父级Host节点
+- 从父级Host中删除子树根Host节点
+  考虑删除p节点的情况
+
+```html
+<div>
+	<p>xxxxx</p>
+</div>
+```
+
+考虑删除Fragment后，子树的根Host节点可能存在多个
+
+```html
+<div>
+  <>
+    <p>xxx</p>
+    <p>yyy</p>
+  </>
+</div>
+```
+
+### 对React的影响
+
+React包需要导入Fragment，用于jsx转换引入Fragment类型
