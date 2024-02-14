@@ -139,6 +139,9 @@ const commitPlacement = (finishedWork: FiberNode) => {
 function getHostSibling(fiber: FiberNode) {
 	let node: FiberNode = fiber
 	findSibling: while (true) {
+		// 先遍历同级的兄弟节点，没遍历到一个兄弟节点，都向下遍历找他子孙节点中的host类型，找到则返回；找不到则向上找
+		// 他父节点的兄弟节点
+		// 向上遍历
 		while (node.sibling === null) {
 			const parent = node.return
 			if (parent === null || parent.tag === HostComponent || parent.tag === HostRoot) {
@@ -156,7 +159,8 @@ function getHostSibling(fiber: FiberNode) {
 			if (node.child === null) {
 				continue findSibling
 			} else {
-				node.child = node.return
+				node.child.return = node
+				node = node.child
 			}
 		}
 		if ((node.flags & Placement) === NoFlags) {

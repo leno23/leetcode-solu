@@ -123,17 +123,148 @@ prod和dev环境react的jsx参数有所不同，需要区分
 - 更新可能发生在任意组件，而更新流程是从根节点递归的
 - 需要一个统一的根节点保存通用信息
 
-初探mount流程
+## 三、初探reconciler
+
+reonciler是React核心逻辑所在的模块，中文名叫协调器，协调(reconcile)就是diff算法的意思
+
+### reconciler有什么用
+
+jQuery工作原理--过程驱动
+
+```
+       调用            显示
+jQuery --> 宿主环境API --> 真实UI
+```
+
+前端框架结构与工作原理--状态驱动
+
+```
+描述UI的方法                     核心模块
+jsx            -------------> React -- reconciler    宿主环境API --> 真实UI
+模板语法        -> 编译优化 -> Vue -- renderer
+```
+
+- 消费jsx
+- 没有编译优化
+- 开放通用的API供不同宿主环境使用
+
+### 核心模块消费jsx的过程
+
+#### 核心模块操作的数据结构是？
+
+当前已知的数据结构：React Element
+React Element如果作为核心模块操作的数据结构，存在的问题
+
+- 无法表达节点之间的关系
+- 字段有限，不好扩展(无法表达状态)
+
+所以，需要一种新数据结构
+
+- 介于React Element与真实UI节点之间
+- 能够表达节点之间的关系
+- 方便扩展(不仅作为数据存储单元，也能作为工作单元)
+
+这就是**FiberNode**(**虚拟DOM**在React中的实现)
+
+当前我们了解的数据结构
+
+- jsx 开发者描述UI的结构
+- React Element jsx执行结果
+- FiberNode
+- DOM element
+
+#### reconciler的工作方式
+
+对于同一个节点，比较其React Element与fiberNode，生成子fiberNode，并根据比较的结构生成不同的标记(插入、删除、移动...)，对应不同的 **宿主环境API的执行**
+
+```
+              比较                   产生
+React element  --→  fiberNode       --→  各种标记
+                        ↓
+React element  --→   子fiberNode    --→  各种标记
+                        ↓
+                    孙fiber
+```
+
+当所有React Element比较完成后，会生成一课fiberNode树，一共会存在两课fibernode树
+current: 与视图中真实UI对应的fiberNode树
+workInProgress：触发更新后，正在reconciler中计算的fiberNode树(双缓冲技术)
+
+#### jsx消费的顺序
+
+以dfs的顺序遍历ReactElement树，这意味着
+
+- 如果有子节点，遍历子节点
+- 如果没有子节点，遍历兄弟节点
+
+这是个递归过程，存在递、归两个阶段
+递：对应commitWork
+归：对应completeWork
+
+## 四、如何触发更新
+
+常见的触发更新的方式
+
+- ReactDOM.createRoot().render
+- this.setState
+- useState的dispatch方法
+  希望实现一套统一的更新机制，特点是
+- 兼容上述触发更新的方式
+- 方便后续扩展(优先级机制)
+
+### 更新机制的组成部分
+
+- 代表更新的数据结构 -- Update
+- 消费Update的数据结构 -- UpdateQueue
+
+```
+_________________
+| UpdateQueue
+|   _____________
+|  | sharedPening
+|  |  __________
+|  |  | Update |
+|  |  ——————————
+|  |  ——————————
+|  |  | Update |
+|  |  ——————————
+
+```
+
+接下来的工作：
+
+- 实现mount时调用的API
+- 将该API介入上述更新机制中
+
+需要考虑的事情
+
+- 更新可能发生于任意组件，而更新流程是从根节点递归的
+- 需要一个统一的根节点保存通用信息
+
+```
+ReactDOM.createRoot(rootElement).render(<App/>)
+      fiberRootNode
+   current ↓↑ stateNode
+      hostRootFiber
+     child ↓↑ return
+          App
+```
+
+## 五、初探mount流程
+
 更新流程的目的：
 
 - 生成wip fiberNode树
 - 标记副作用flags
-  更新流程的步骤
+
+更新流程的步骤
+
 - 递： beginWork
 - 归 completeWork
 
-beginWork
-对于如下结构的reactElement
+### beginWork
+
+对于如下结构的ReactElement
 
 ```html
 <a>
@@ -142,6 +273,7 @@ beginWork
 ```
 
 当进入A的beginWork时，通过比较B的current fiberNode与B ReactElement 生成B对应的wip fiberNode
+
 在此过程中最多会标记2类【结构变化】相关的flags
 
 - Placement
@@ -155,21 +287,32 @@ beginWork
 ### 实现与Host相关节点的beginWork
 
 首先，为开发环境增加**DEV**标识，方便Dev包打印更多信息
-`pnpm i -D -w @rollup/plugin-replace`
-HostRoot的beginWork的工作流程1.计算状态的最新值2.创造子FiberNode
-HostComponent的beginWork的工作流程1.创造子FiberNode
-HostText没有beginWork工作流程(因为他没有子节点)
-`<p>唱跳rap</p>`
-beginWork性能优化策略
-考虑如下结构的reactElement
-`
 
+`pnpm i -D -w @rollup/plugin-replace`
+
+HostRoot的beginWork的工作流程
+
+- 1.计算状态的最新值
+- 2.创造子FiberNode
+  HostComponent的beginWork的工作流程
+- 1.创造子FiberNode
+  HostText没有beginWork工作流程(因为他没有子节点)
+
+`<p>唱跳rap</p>`
+
+### beginWork性能优化策略
+
+考虑如下结构的reactElement
+
+```html
 <div>
-    <p>练习时长</p>
-    <span>两年半</span>
+	<p>练习时长</p>
+	<span>两年半</span>
 </div>
-`
+```
+
 理论上mount流程完毕后包含的flags
+
 - 两年半 Placement
 - span Placement
 - 练习时长 Placement
@@ -177,16 +320,19 @@ beginWork性能优化策略
 - div Placement
   相比于执行5次Placement，我们可以构建好【离屏DOM树】后，对div执行1次Pplacement操作
 
-completeWork
-解决的问题
+### completeWork
+
+需要解决的问题
 
 - 对于Host类型fiberNode 构建离屏DOM树
 - 标记Update flag
-  completeWork性能优化策略
-  flags分布在不同fiberNode中，如何快速找打他们
-  答案：利用completeWork向上遍历(归)流程，将子fiberNode的flags冒泡到付fiberNode
 
-### 初探ReactDom
+### completeWork性能优化策略
+
+flags分布在不同fiberNode中，如何快速找到他们？
+答案：利用completeWork向上遍历(归)流程，将子fiberNode的flags冒泡到付fiberNode
+
+## 六、初探ReactDom
 
 react内部的三个阶段
 
@@ -194,13 +340,16 @@ react内部的三个阶段
 - render阶段
 - commit阶段
 
-commit阶段的三个子阶段
+### commit阶段的三个子阶段
 
 - beforeMutation
 - mutation
 - layout
-  当前commit阶段要执行的任务
-  1.fiber树的切换2.执行Placement对应操作
+
+### 当前commit阶段要执行的任务
+
+- 1.fiber树的切换
+- 2.执行Placement对应操作
 
 需要注意的问题，考虑如下jsx，如果span中含有flag，该如何找到他
 `<App>
@@ -209,20 +358,29 @@ commit阶段的三个子阶段
     </div>
 </App>`
 
-打包ReactDom
+### 打包ReactDom
+
 需要注意
 
 - 兼容原版React的导出
 - 处理HostConfig的指向
 
-### 初探FC与实现 第二种调试方式
+## 七、初探FC与实现 第二种调试方式
 
 FunctionComponent需要考虑的问题
 
 - 如何支持FC beginWork completeWork
 - 如何组织Hooks
 
-第二种调试方式
+### 如何支持FC
+
+FC的工作同样植根于
+
+- beginWork
+- completeWork
+
+### 第二种调试方式
+
 采用Vite的实时调试，他的好处是【实时看到源码运行效果】
 
 第三种调试方式
@@ -230,7 +388,127 @@ FunctionComponent需要考虑的问题
 jest-config jest的官方默认配置
 jest-environmenttype-jsdom 调试DOM环境
 
-# 初探update流程
+## 八、实现useState
+
+hook脱离FC上下文，仅仅是普通函数，如何让他拥有感知上下文环境的能力
+
+- hook如何知道在另外一个hook的上下文环境内执行
+
+```jsx
+function App() {
+	useEffect(() => {
+		useState(0);
+	});
+}
+```
+
+- hook怎么知道当前是mount还是update
+  解决方案：在不同上下文中调用的hook不是同一个函数
+
+```
+Reconciler                                            内部数据共享层
+ mount时 useState useEffect...集合          →
+ update时 useState useEffect...集合          →    当前使用的hooks集合  ---> React
+ hook上下文中时 useState useEffect...集合    →
+```
+
+实现【内部数据共享层】时的注意事项
+以浏览器为例，Reconciler+hostConfig = ReactDOM
+
+增加【内部数据共享层】，意味着Reconciler和React产生关联，进而意味着ReactDOM与React产生关联。
+
+如果两个包【产生关联】，在打包时需要考虑：
+两者的代码是打包在一起还是分开？
+
+如果打包在一起，意味着打包后的ReactDOM中会包含React的代码，那么ReactDOM中会包含一个内部数据共享层，React中会包含一个内部数据共享层，这两者不是同一个内部数据共享层。
+
+而我们希望两者共享数据，所以不希望ReactDOM中会包含React的代码
+
+- hook如何知道自身数据保存在哪
+
+```js
+function App() {
+	// 执行useState为什么返回正确
+	const [num] = useState(0);
+}
+```
+
+答案：可以记录当前正在render的FC对应的fiberNode，在fiberNode中保存hook数据
+
+### 实现Hooks的数据结构
+
+fiberNode中可用的字段
+
+- memorizedState
+- updateQueue
+
+```
+FC fiberNode
+memorizedState  →    useState  → hook数据
+                         ↓
+                      useEffect
+                         ↓
+                      useState
+```
+
+对于FC 对应的fiberNode，存在两层数据
+
+- fiberNode.memorizedState对应Hooks链表
+- 链表中每个hook对应自身的数据
+
+### 实现useState
+
+包括两个方面
+
+- 实现mount时useState的实现
+- 实现dispatch方法，并接入现有更新流程内
+
+## 九、ReactElement的测试用例
+
+本节课将实现第三种调试方式--用例调试
+
+- 实现第一个测试工具-test-utils
+- 实现测试环境
+- 实现ReactElement用例
+  与测试相关的代码都来自React仓库，可以把React仓库下载下来
+  `git clone xxx`
+
+### 实现test-utils
+
+这是用于测试的工具集，来源于ReactTestUtils.js， 特点是使用ReactDOM作为宿主环境
+
+### 实现测试环境
+
+`pnpm i -D -w jest jest-config jest-environment-jsdom`
+配置:
+
+```js
+const { defaults } = require('jest-config');
+module.exports = {
+	...defaults,
+	rootDir: process.cwd(),
+	modulePathIgnorePatterns: ['<rootDir>/.history'],
+	// import React from 'react'  react从哪里进行解析
+	moduleDirectories: ['dist/nodu_modules', ...defaults.moduleDirectories],
+	testEnvironment: 'jsdom'
+};
+```
+
+### 实现ReactElement用例
+
+来源自ReactElement-test.js
+为jest增加JSX解析能力，安装Babel
+`pnpm i -D -w @babel/core @babel/prest-env @babel/plugin-transform-react-jsx`
+新增babel.config.js
+
+```js
+module.exports = {
+	presets: ['@babel/preset-env'],
+	plugins: [['@babel/plugin-transform-react-jsx', { throwIfNamespace: false }]]
+};
+```
+
+## 10、初探update流程
 
 update流程和mount流程的区别
 
@@ -247,7 +525,7 @@ update流程和mount流程的区别
 - 对于useState
   - 实现相对于mountState的updateState
 
-## beginWork流程
+### beginWork流程
 
 本节课仅处理单一节点，所以省去了【节点移动】的情况，我们需要处理
 
@@ -262,11 +540,11 @@ update流程和mount流程的区别
 
 注意：对于同一个fiberNode即使反复更新，current、wip这两个fiberNode会重复使用
 
-## completeWork流程
+### completeWork流程
 
 主要处理[标记Update]的情况，本节课我们处理HostText内容更新的情况
 
-## commitWork流程
+### commitWork流程
 
 对于标记ChildDeletion的子树
 
@@ -275,7 +553,7 @@ update流程和mount流程的区别
 - 对于字数的 跟HostComponent，需要移除DOM
   所以，需要实现[遍历ChildDeletion子树]的流程
 
-## 对于useState
+### 对于useState
 
 需要实现
 
@@ -285,8 +563,8 @@ update流程和mount流程的区别
   其中updateWorkInProgressHook的实现需要考虑的问题：
 - hook数据从哪里来
 - 交互阶段触发的更新
-  `<div onClick={() => {udpate()}}></div>`
-  """""
+  `<div onClick={() => {update()}}></div>`
+- render阶段触发的更新
 
 ```js
 function App() {
@@ -297,7 +575,7 @@ function App() {
 }
 ```
 
-# 实现事件系统
+## 11、实现事件系统
 
 事件系统本质上是植根于浏览器事件模型，所以他隶属于ReactDOM，在实现时要做到对Reconciler 0侵入
 实现事件系统需要考虑：
@@ -306,20 +584,28 @@ function App() {
 - 实现合成事件对象
 - 方便后续扩展
 
-实现ReactDOM与Reconciler对接
+### 实现ReactDOM与Reconciler对接
+
 将事件回调保存在DOM中，通过以下两个时机对接
 
 - 创建DOM时
 - 更新属性时
-  模拟实现浏览器事件流程 事件系统.drawio
 
-# 实现Diff算法
+### 模拟实现浏览器事件流程
+
+事件系统.drawio
+需要注意
+
+- 基于事件对象实现合成事件，以满足自定需求(比如:阻止事件传递)
+- 方便后续扩展优先级机制
+
+## 12、实现Diff算法
 
 当前仅实现单一节点的增删操作，即【单节点Diff算法】，本节课实现多节点Diff算法
 
-本节课采用简写实例: A1-> A2
+本节课采用简写实例: A1-> A2 type:A key:1 --> type:A key:2
 
-## 对于reconcileSingleElement的改动
+### 对于reconcileSingleElement的改动
 
 当前支持的情况
 
@@ -330,7 +616,9 @@ function App() {
 
 - ABC->A
   **【单\多节点】是指【更新后是单\多节点】**
-  更细致的，我们需要区分4中情况
+
+更细致的，我们需要区分4种情况
+
 - key相同，type相同==复用当前节点
   例如: A1B2C3->A1
 - key相同，type不同==不存在任何复用的可能性
@@ -338,21 +626,25 @@ function App() {
 - key不同，type相同==当前节点不能复用
 - key不同，type不同--当前节点不能复用
 
-## 对于reconcileSingleTextNode的改动
+### 对于reconcileSingleTextNode的改动
 
 类似reconcileSingleElement
 
-## 对于同级多节点Diff的支持
+### 对于同级多节点Diff的支持
 
 单节点需要支持的情况
 
 - 插入Placement
 - 删除ChildDeletion
-  多节点需要支持的情况
+
+多节点需要支持的情况
+
 - 插入Placement
 - 移除ChildDeletion
 - 移动Placement
-  整体流程分为4步
+
+整体流程分为4步
+
 - 将current中所有同级fiber保存在Map中
 - 遍历newChild数组，对于每个遍历到的element，存在两种情况
   - 在Map中存在对应current fiber，且可以复用
@@ -360,7 +652,7 @@ function App() {
 - 判断是插入还是删除
 - 最后Map中剩下的都标记删除
 
-## 步骤2 -- 是否复用 详解
+### 步骤2 -- 是否复用 详解
 
 首先，根据key从Map中获取current fiber，如果不存在current fiber，则没有复用的可能
 
@@ -388,7 +680,7 @@ function App() {
 </ul>
 ```
 
-## 步骤3--插入/移动判断 详解
+### 步骤3--插入/移动判断 详解
 
 【移动】具体是指向右移动
 移动的判断依据是 element的index与【element对应的current fiber】index的比较
@@ -401,7 +693,7 @@ A1B2C3 -> B2C3A1
 - 如果接下来遍历到可复用fiber的index<lastPlaceIndex,则标记Placement
 - 否则，不标记
 
-## 移动操作的执行
+### 移动操作的执行
 
 Placement同时对应
 

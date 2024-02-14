@@ -12,6 +12,7 @@ function prepareFreshStack(root: FiberRootNode) {
 	workInProgress = createWorkInProgress(root.current, {});
 }
 
+// 在fiber中调度update
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
 	// 调度功能
 	// fiberRootNode

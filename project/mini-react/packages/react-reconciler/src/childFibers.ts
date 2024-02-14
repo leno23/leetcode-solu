@@ -50,12 +50,13 @@ function childReconciler(shouldTrackEffect: boolean) {
 				} else {
 					if (__DEV__) {
 						console.warn('还未实现的react类型', element);
-						break work
+						break
 					}
 				}
 			} else {
 				// key不同 删除旧的
 				deleteChild(returnFiber, currentFiber);
+				// 继续遍历剩下的sibling
 				currentFiber = currentFiber.sibling
 			}
 		}
@@ -72,10 +73,12 @@ function childReconciler(shouldTrackEffect: boolean) {
 				deleteRemainChildren(returnFiber, currentFiber.sibling)
 				return existing
 			}
+			// 当前节点不能复用
 			deleteChild(returnFiber, currentFiber)
 			currentFiber = currentFiber.sibling
 
 		}
+		// 都不能复用，创建一个新节点
 		const fiber = new FiberNode(HostText, { content }, null);
 		fiber.return = returnFiber;
 		return fiber;
@@ -158,10 +161,12 @@ function childReconciler(shouldTrackEffect: boolean) {
 		if (typeof element === 'string' || typeof element === 'number') {
 			if (before) {
 				if (before.tag === HostText) {
+					// 能复用就复用
 					existingChildren.delete(keyToUse)
 					return useFiber(before, { content: element + '' })
 				}
 			}
+			// 不能服复用就创建新的
 			return new FiberNode(HostText, { content: element + '' }, null)
 		}
 		// ReactElement
@@ -170,16 +175,17 @@ function childReconciler(shouldTrackEffect: boolean) {
 				case REACT_ELEMENT_TYPE:
 					if (before) {
 						if (before.type === element.type) {
+							// key相同 type相同可以复用
 							existingChildren.delete(keyToUse)
 							return useFiber(before, element.props)
 						}
 					}
 					return createFiberFromElement(element)
 			}
-		}
-		// TODO 数组类型
-		if (Array.isArray(element) && __DEV__) {
-			console.warn('还未实现数组类型的child');
+			// TODO 数组类型
+			if (Array.isArray(element) && __DEV__) {
+				console.warn('还未实现数组类型的child');
+			}
 		}
 		return null
 	}

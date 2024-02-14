@@ -1,13 +1,21 @@
 import React, { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 
-
 const App = () => {
-  const [num, setNum] = useState(100)
+  const [num, setNum] = useState(101)
   // window.setNum = setNum
-  return <div  onClick={() => {
+  const arr = num % 2 ? [
+    <li key='3'>3</li>,
+    <li key='2'>2</li>,
+    <li key='1'>1</li>
+  ] : [
+    <li key='1'>1</li>,
+    <li key='2'>2</li>,
+    <li key='3'>3</li>
+  ]
+  return <ul  onClickCapture={() => {
     setNum(num + 1)
-  }}>{num}</div>
+  }}>{arr}</ul>
 }
 
 const Child = () => {

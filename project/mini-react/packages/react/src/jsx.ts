@@ -2,6 +2,7 @@ import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
 import { ElementType, Key, Props, ReactElementType, Ref } from 'shared/ReactTypes';
 
 const ReactElement = function (type: ElementType, key: Key, ref: Ref, props: Props): ReactElementType {
+
 	const element = {
 		$$typeof: REACT_ELEMENT_TYPE,
 		type,
@@ -16,19 +17,25 @@ const ReactElement = function (type: ElementType, key: Key, ref: Ref, props: Pro
 export function isValidElement(object: any) {
 	return typeof object === 'object' && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
 }
-export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
+
+export const createElement = (
+	type: ElementType,
+	config: any,
+	...maybeChildren: any
+) => {
 	let key: Key = null;
-	let props: Props = {};
+	const props: Props = {};
 	let ref: Ref = null;
+
 	for (const prop in config) {
 		const val = config[prop];
-		if (prop == 'key') {
+		if (prop === 'key') {
 			if (val !== undefined) {
 				key = '' + val;
 			}
 			continue;
 		}
-		if (prop == 'ref') {
+		if (prop === 'ref') {
 			if (val !== undefined) {
 				ref = val;
 			}
@@ -38,9 +45,9 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 			props[prop] = val;
 		}
 	}
-	const maybeChildLength = maybeChildren.length;
-	if (maybeChildLength) {
-		if (maybeChildLength === 1) {
+	const maybeChildrenLength = maybeChildren.length;
+	if (maybeChildrenLength) {
+		if (maybeChildrenLength === 1) {
 			props.children = maybeChildren[0];
 		} else {
 			props.children = maybeChildren;
@@ -49,10 +56,16 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 	return ReactElement(type, key, ref, props);
 };
 
-export const jsxDEV = (type: ElementType, config: any) => {
+
+export const jsxDEV = (type: ElementType, config: any, maybeKey: any) => {
 	let key: Key = null;
-	let props: Props = {};
+	const props: Props = {};
 	let ref: Ref = null;
+
+	if (maybeKey !== undefined) {
+		key = '' + maybeKey;
+	}
+
 	for (const prop in config) {
 		const val = config[prop];
 		if (prop == 'key') {

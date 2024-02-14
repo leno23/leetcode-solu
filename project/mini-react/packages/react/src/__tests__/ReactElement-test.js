@@ -16,7 +16,7 @@ describe('ReactElement', () => {
 		ReactDOM = require('react-dom');
 		ReactTestUtils = require('react-dom/test-utils');
 		ComponentFC = () => {
-			return React.createElement('div');
+			return React.createElement('div', { key: 1 });
 		};
 	});
 
@@ -33,7 +33,7 @@ describe('ReactElement', () => {
 		expect(element.props).toEqual({});
 	});
 
-	it('uses the fallbac bnk value when in an environment without symbol', () => {});
+	it('uses the fallbac bnk value when in an environment without symbol', () => { });
 
 	it('merge an additional arguments onto the children prop', () => {
 		const a = 1;

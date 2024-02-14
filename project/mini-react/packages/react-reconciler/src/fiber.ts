@@ -22,13 +22,18 @@ export class FiberNode {
 	updateQueue: unknown;
 	deletions: FiberNode[] | null;
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
+		// workTag  HostText HostComponent
 		this.tag = tag;
 		this.key = key;
+		// dom节点
 		this.stateNode = null;
+		// 函数式组件类型是 对应的函数
 		this.type = null;
 
-		// 构成树状结构
+		// 用来表示节点之间的关系，构成树状结构
+		// 父节点
 		this.return = null;
+		// 下一个兄弟节点
 		this.sibling = null;
 		this.child = null;
 		this.index = 0;
@@ -36,12 +41,16 @@ export class FiberNode {
 		this.ref = null;
 
 		// 作为工作单元
+		// 开始时的props
 		this.pendingProps = pendingProps;
+		// 工作完成时，确定下来的props
 		this.memorizedProps = null;
 		this.memorizedState = null;
 		this.updateQueue = null;
 
+		// current和workINProgress之间切换，双缓冲技术
 		this.alternate = null;
+
 		// 副作用
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
