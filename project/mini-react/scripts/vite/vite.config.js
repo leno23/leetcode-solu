@@ -13,6 +13,9 @@ export default defineConfig({
 			preventAssignment: true
 		})
 	],
+	server: {
+		hot: true
+	},
 	resolve: {
 		alias: [
 			{

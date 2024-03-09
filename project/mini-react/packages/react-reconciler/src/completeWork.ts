@@ -1,7 +1,12 @@
 import { appendInitialChild, createInstance, createTextInstance } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
+import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
+
+const markUpdate = (fiber: FiberNode) => {
+	fiber.flags |= Update
+}
 
 function markUpdate(fiber: FiberNode) {
 	fiber.flags += Update;
@@ -15,6 +20,9 @@ export const completeWork = (wip: FiberNode) => {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update
+				// 1.props是否变化  {onClick: xxx}  {onClick: xxx2}
+				// 2.变了 Update flag
+				updateFiberProps(wip.stateNode, newProps)
 			} else {
 				// 1.构建dom
 				// 将dom插入到dom树中
@@ -27,9 +35,9 @@ export const completeWork = (wip: FiberNode) => {
 		case HostText:
 			if (current !== null && wip.stateNode) {
 				// update
-				const oldText = current.memoizedProps.content;
-				const newText = newProps.content;
-				if (oldText !== newText) {
+				const oldText = current.memorizedProps.content
+				const newText = newProps.content
+				if (oldText != newText) {
 					markUpdate(wip)
 				}
 			} else {
@@ -40,10 +48,9 @@ export const completeWork = (wip: FiberNode) => {
 			bubbleProperties(wip);
 			return null;
 		case HostRoot:
-			bubbleProperties(wip);
-			return null;
 		case FunctionComponent:
-			bubbleProperties(wip);
+		case Fragment:
+			bubbleProperties(wip)
 			return null;
 		default:
 			if (__DEV__) {
@@ -84,8 +91,15 @@ function bubbleProperties(wip: FiberNode) {
 		subtreeFlags |= child.subtreeFlags;
 		subtreeFlags |= child.flags;
 
-		child.return = wip;
-		child = child.sibling;
-	}
-	wip.subtreeFlags |= subtreeFlags;
+function bubbleProperties(wip: FiberNode) {
+	let subtreeFlags = NoFlags
+	let child = wip.child
+	while (child !== null) {
+		subtreeFlags |= child.subtreeFlags
+		subtreeFlags |= child.flags
+
+		child.return = wip
+		child = child.sibling
+	} 
+	wip.subtreeFlags |= subtreeFlags
 }

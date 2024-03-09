@@ -1,7 +1,8 @@
 import { Props, Key, Ref, ReactElementType } from 'shared/ReactTypes';
-import { FunctionComponent, HostComponent, WorkTag } from './workTags';
+import { Fragment, FunctionComponent, HostComponent, WorkTag } from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
+import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
 
 export class FiberNode {
 	type: any;
@@ -15,20 +16,25 @@ export class FiberNode {
 	index: number;
 	ref: Ref;
 	memorizedState: any;
-	memoizedProps: Props | null;
+	memorizedProps: Props | null;
 	alternate: FiberNode | null;
 	flags: Flags;
-	subtreeFlags: Flags
+	subtreeFlags: Flags;
 	updateQueue: unknown;
 	deletions: FiberNode[] | null;
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
+		// workTag  HostText HostComponent
 		this.tag = tag;
-		this.key = key;
+		this.key = key || null;
+		// dom节点
 		this.stateNode = null;
+		// 函数式组件类型是 对应的函数
 		this.type = null;
 
-		// 构成树状结构
+		// 用来表示节点之间的关系，构成树状结构
+		// 父节点
 		this.return = null;
+		// 下一个兄弟节点
 		this.sibling = null;
 		this.child = null;
 		this.index = 0;
@@ -36,17 +42,20 @@ export class FiberNode {
 		this.ref = null;
 
 		// 作为工作单元
+		// 开始时的props
 		this.pendingProps = pendingProps;
-		this.memoizedProps = null;
+		// 工作完成时，确定下来的props
+		this.memorizedProps = null;
 		this.memorizedState = null;
 		this.updateQueue = null;
 
+		// current和workINProgress之间切换，双缓冲技术
 		this.alternate = null;
+
 		// 副作用
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
 		this.deletions = null;
-		
 	}
 }
 
@@ -54,11 +63,15 @@ export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null;
+	pendingLane: Lanes;
+	finishedLane: Lane;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
+		this.pendingLane = NoLanes;
+		this.finishedLane = NoLane;
 	}
 }
 
@@ -78,12 +91,12 @@ export const createWorkInProgress = (
 		wip.pendingProps = pendingProps;
 		wip.flags = NoFlags;
 		wip.subtreeFlags = NoFlags;
-		wip.deletions = null
+		wip.deletions = null;
 	}
 	wip.type = current.type;
 	wip.updateQueue = current.updateQueue;
 	wip.child = current.child;
-	wip.memoizedProps = current.memoizedProps;
+	wip.memorizedProps = current.memorizedProps;
 	wip.memorizedState = current.memorizedState;
 
 	return wip;
@@ -99,5 +112,10 @@ export function createFiberFromElement(element: ReactElementType): FiberNode {
 	}
 	const fiber = new FiberNode(fiberTag, props, key);
 	fiber.type = type;
+	return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+	const fiber = new FiberNode(Fragment, elements, key);
 	return fiber;
 }
