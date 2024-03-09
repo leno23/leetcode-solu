@@ -1,8 +1,19 @@
 import { beginWork } from './beginWork';
-import { commitMutationEffects } from './commitWork';
+import {
+	commitHookEffectListCreate,
+	commitHookEffectListDestory,
+	commitHookEffectListUnmount,
+	commitMutationEffects
+} from './commitWork';
 import { completeWork } from './completeWork';
-import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
-import { MutationMask, NoFlags } from './fiberFlags';
+import {
+	FiberNode,
+	FiberRootNode,
+	createWorkInProgress,
+	pendingPassiveEffect
+} from './fiber';
+import { HookHasEffect, Passive } from './fiberEffectTags';
+import { MutationMask, NoFlags, PassiveEffect, PassiveMask } from './fiberFlags';
 import {
 	Lane,
 	NoLane,
@@ -17,9 +28,14 @@ import {
 	scheduleSyncCallback
 } from './syncTaskQueue';
 import { HostRoot } from './workTags';
+import {
+	unstable_scheduleCallback as schedulerCallback,
+	unstable_NormalPriority as NormalPriority
+} from 'scheduler';
 
 let workInProgress: FiberNode | null = null;
-let wipRootRenderLane: Lane = NoLane;
+let wipRootRenderLane: Lane = NoLane; // 本次更新的lane
+let rootDoesHasPassiveEffect: boolean = false;
 
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 	// 为hostRoot创建wip
@@ -40,7 +56,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 }
 
 function ensureRootIsScheduled(root: FiberRootNode) {
-	const updateLane = getHighestPriorityLane(root.pendingLane);
+	const updateLane = getHighestPriorityLane(root.pendingLanes);
 	if (updateLane === NoLane) {
 		return;
 	}
@@ -53,12 +69,12 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane));
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
-		// 其他优先级  用宏任务调度
+		// 其他优先级  用宏任务调度   Vue Svelte中没有这个逻辑
 	}
 }
 
 function markRootUpdated(root: FiberRootNode, lane: Lane) {
-	root.pendingLane = mergeLanes(root.pendingLane, lane);
+	root.pendingLanes = mergeLanes(root.pendingLanes, lane);
 }
 
 function markUpdateFromFiberToRoot(fiber: FiberNode) {
@@ -76,14 +92,14 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 
 // 触发更新流程
 function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
-	const nextLines = getHighestPriorityLane(root.pendingLane);
+	const nextLines = getHighestPriorityLane(root.pendingLanes);
 	if (nextLines !== SyncLane) {
 		// 其他比SyncLane低的优先级
 		// NoLane
 		ensureRootIsScheduled(root);
 		return;
 	}
-	if(__DEV__){
+	if (__DEV__) {
 		console.log('render阶段开始');
 	}
 	// 初始化
@@ -125,6 +141,21 @@ function commitRoot(root: FiberRootNode) {
 	root.finishedWork = null;
 	root.finishedLane = NoLane;
 	markRootFinished(root, lane);
+
+	// 存在函数组件 需要执行useEffect回调的
+	if (
+		(finishedWork.flags & PassiveMask) !== NoFlags ||
+		(finishedWork.subtreeFlags & PassiveMask) !== NoFlags
+	) {
+		if (!rootDoesHasPassiveEffect) {
+			rootDoesHasPassiveEffect = true;
+			schedulerCallback(NormalPriority, () => {
+				// 执行副作用
+				flushPassiveEffects(root.pendingPassiveEffect);
+				return;
+			});
+		}
+	}
 	// 判断是否存在三个子阶段需要执行的操作
 	// root flags root
 	const subtreeHasEffect = (finishedWork.subtreeFlags & MutationMask) !== NoFlags;
@@ -132,14 +163,30 @@ function commitRoot(root: FiberRootNode) {
 	if (subtreeHasEffect || rootHasEffect) {
 		// beforeMutation
 		// mutation Placement
-		commitMutationEffects(finishedWork);
+		commitMutationEffects(finishedWork, root);
 		root.current = finishedWork;
 	} else {
 		// layout
 		root.current = finishedWork;
 	}
+	rootDoesHasPassiveEffect = false;
+	ensureRootIsScheduled(root);
 }
+function flushPassiveEffects(pendingPassiveEffect: pendingPassiveEffect) {
+	pendingPassiveEffect.unmount.forEach((effect) => {
+		commitHookEffectListUnmount(Passive, effect);
+	});
+	pendingPassiveEffect.unmount = [];
 
+	pendingPassiveEffect.update.forEach((effect) => {
+		commitHookEffectListDestory(Passive | HookHasEffect, effect);
+	});
+	pendingPassiveEffect.update.forEach((effect) => {
+		commitHookEffectListCreate(Passive | HookHasEffect, effect);
+	});
+	pendingPassiveEffect.update = [];
+	flushSyncCallbacks()
+}
 function workLoop() {
 	while (workInProgress !== null) {
 		performUnitOfWork(workInProgress);
@@ -147,7 +194,7 @@ function workLoop() {
 }
 function performUnitOfWork(fiber: FiberNode) {
 	// 有子节点就遍历子节点
-	const next = beginWork(fiber);
+	const next = beginWork(fiber, wipRootRenderLane);
 	fiber.memorizedProps = fiber.pendingProps;
 	if (next === null) {
 		// 没有子节点遍历兄弟节点

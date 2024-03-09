@@ -8,9 +8,6 @@ const markUpdate = (fiber: FiberNode) => {
 	fiber.flags |= Update
 }
 
-function markUpdate(fiber: FiberNode) {
-	fiber.flags += Update;
-}
 export const completeWork = (wip: FiberNode) => {
 	// 递归中的归
 	const newProps = wip.pendingProps;
@@ -83,13 +80,6 @@ function appendAllChildren(parent: Element, wip: FiberNode) {
 		node = node.sibling;
 	}
 }
-
-function bubbleProperties(wip: FiberNode) {
-	let subtreeFlags = NoFlags;
-	let child = wip.child;
-	while (child !== null) {
-		subtreeFlags |= child.subtreeFlags;
-		subtreeFlags |= child.flags;
 
 function bubbleProperties(wip: FiberNode) {
 	let subtreeFlags = NoFlags

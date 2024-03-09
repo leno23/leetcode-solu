@@ -3,6 +3,7 @@ import { Fragment, FunctionComponent, HostComponent, WorkTag } from './workTags'
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
 import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
+import { Effect } from './fiberHooks';
 
 export class FiberNode {
 	type: any;
@@ -15,7 +16,7 @@ export class FiberNode {
 	child: FiberNode | null;
 	index: number;
 	ref: Ref;
-	memorizedState: any;
+	memoizedState: any;
 	memorizedProps: Props | null;
 	alternate: FiberNode | null;
 	flags: Flags;
@@ -46,7 +47,7 @@ export class FiberNode {
 		this.pendingProps = pendingProps;
 		// 工作完成时，确定下来的props
 		this.memorizedProps = null;
-		this.memorizedState = null;
+		this.memoizedState = null;
 		this.updateQueue = null;
 
 		// current和workINProgress之间切换，双缓冲技术
@@ -58,20 +59,28 @@ export class FiberNode {
 		this.deletions = null;
 	}
 }
-
+export interface pendingPassiveEffect {
+	unmount: Effect[];
+	update: Effect[];
+}
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null;
-	pendingLane: Lanes;
+	pendingLanes: Lanes;
 	finishedLane: Lane;
+	pendingPassiveEffect: pendingPassiveEffect;
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
-		this.pendingLane = NoLanes;
+		this.pendingLanes = NoLanes;
 		this.finishedLane = NoLane;
+		this.pendingPassiveEffect = {
+			unmount: [],
+			update: []
+		};
 	}
 }
 
@@ -97,7 +106,7 @@ export const createWorkInProgress = (
 	wip.updateQueue = current.updateQueue;
 	wip.child = current.child;
 	wip.memorizedProps = current.memorizedProps;
-	wip.memorizedState = current.memorizedState;
+	wip.memoizedState = current.memoizedState;
 
 	return wip;
 };

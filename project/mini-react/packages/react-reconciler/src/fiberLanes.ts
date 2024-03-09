@@ -15,10 +15,12 @@ export function requestUpdateLane() {
 	return SyncLane;
 }
 
+// 获取优先级最高的lane，lane越小优先级越高
 export function getHighestPriorityLane(lanes: Lanes): Lane {
+	// 获取二进制中最低位的1的位权
 	return lanes & -lanes;
 }
 
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
-	root.pendingLane &= ~lane;
+	root.pendingLanes &= ~lane;
 }

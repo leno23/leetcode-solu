@@ -46,14 +46,14 @@ function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
 	return wip.child;
 }
 function updateHostRoot(wip: FiberNode, renderLane: Lane) {
-	const baseState = wip.memorizedState;
+	const baseState = wip.memoizedState;
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>;
 	const pending = updateQueue.shared.pending;
 	updateQueue.shared.pending = null;
-	const { memorizedState } = processUpdateQueue(baseState, pending, renderLane);
+	const { memoizedState } = processUpdateQueue(baseState, pending, renderLane);
 
-	wip.memorizedState = memorizedState;
-	const nextChildren = wip.memorizedState;
+	wip.memoizedState = memoizedState;
+	const nextChildren = wip.memoizedState;
 	reconcileChildren(wip, nextChildren);
 	return wip.child;
 }

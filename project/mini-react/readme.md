@@ -439,12 +439,12 @@ function App() {
 
 fiberNode中可用的字段
 
-- memorizedState
+- memoizedState
 - updateQueue
 
 ```
 FC fiberNode
-memorizedState  →    useState  → hook数据
+memoizedState  →    useState  → hook数据
                          ↓
                       useEffect
                          ↓
@@ -453,7 +453,7 @@ memorizedState  →    useState  → hook数据
 
 对于FC 对应的fiberNode，存在两层数据
 
-- fiberNode.memorizedState对应Hooks链表
+- fiberNode.memoizedState对应Hooks链表
 - 链表中每个hook对应自身的数据
 
 ### 实现useState
@@ -969,3 +969,80 @@ processUpdateQueue方法消费update时需要考虑
 ### commit阶段的改造
 
 移除【本地更新被消费的Lane】
+
+## 实现useEffect
+实现useEffect需要考虑的
+- effect数据结构
+```
+fiber.memoizedState = useEffect --> useState               useEffect      
+                        |              |                    |
+                      memoizedState   memoizedState     memoizedState
+                      next            next    -->       next
+                      updateQuque     updateQueue       updateQueue
+                      ...             ...               ...
+```
+- effect的工作流程如何接入到现有流程
+什么是effect
+```
+
+function App(){
+  useEffect(() => {
+    return () => {
+
+    }
+  },[x],[y])
+  useLayoutEffect(() => {})
+  useEffect(() => {},[])
+}
+```
+数据结构需要考虑
+- 不同effect可以同一个机制
+  - useEffect     依赖变化以后的当前commit阶段完成后 异步执行
+  - useLayoutEffect    commit完成后  同步执行
+  - useInsertionEffect  拿不到dom引用，一般给cssinjs库使用
+- 需要能保存依赖
+- 需要能保存create回调
+- 需要能保存destory回调
+- 需要能够区分是否需要触发create回调
+  - mount时
+  - 依赖变化时
+```js
+const effect = {
+  tag,
+  create,
+  destory,
+  deps,
+  next
+}
+```
+注意区分本节课中新增的3个flags
+- 对于fiber，新增PassiveEffect，代表【当前fiber本次更新存在副作用】
+- 对于effect hook、Passive代表【useEffect对应的effect】
+- 对于effect hook、HookHasEffect代表【当前effect本次更新存在副作用】
+```
+fiberNode                            fiber  -> PassiveEffect
+useEffect  -> Passive                useEffect  Passive
+useState                             useState
+useLayoutEffect    --> layout        useLayoutEffect --> Passive | HookHasEffect
+```
+- 为了方便使用，最好和其他effect连接成链表render时重置effect链表
+```
+fiber.memoizedState = useEffect -->         useState                 useEffect      
+                        |          =>next        |          =>next       |
+                      memoizedState         memoizedState            memoizedState
+                      next                  next    -->              next
+                      updateQuque           updateQueue              updateQueue
+                      ...                   ...                      ...
+```
+### effect的工作原理
+```
+render阶段
+FC FiberNoe    存在副作用
+    ↓
+commit阶段
+  清理副作用
+  收集回调
+
+    ↓
+  执行副作用
+```

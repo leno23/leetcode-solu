@@ -20,6 +20,7 @@ export function flushSyncCallbacks() {
 			}
 		} finally {
 			isFlushingSyncQueue = false;
+			syncQueue = null;
 		}
 	}
 }
@@ -28,5 +29,5 @@ export const scheduleMicroTask =
 	typeof queueMicrotask === 'function'
 		? queueMicrotask
 		: typeof Promise === 'function'
-		? (callback: (...args: any) => void) => Promise.resolve(null).then(callback)
-		: setTimeout;
+			? (callback: (...args: any) => void) => Promise.resolve(null).then(callback)
+			: setTimeout;

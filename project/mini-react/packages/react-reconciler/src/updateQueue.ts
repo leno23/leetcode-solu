@@ -55,9 +55,9 @@ export const processUpdateQueue = <State>(
 	pendingUpdate: Update<State> | null,
 	renderLane: Lane
 	// 返回全新的状态
-): { memorizedState: State } => {
+): { memoizedState: State } => {
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
-		memorizedState: baseState
+		memoizedState: baseState
 	};
 	if (pendingUpdate !== null) {
 		let first = pendingUpdate.next;
@@ -67,11 +67,11 @@ export const processUpdateQueue = <State>(
 			if (updateLane === renderLane) {
 				const action = pendingUpdate.action;
 				if (action instanceof Function) {
-					// baseState 1 update (x) => 4x -< memorizedState
+					// baseState 1 update (x) => 4x -< memoizedState
 					baseState = action(baseState);
 				} else {
-					// baseState 1 update 2 -> memorizedState 2
-					result.memorizedState = action;
+					// baseState 1 update 2 -> memoizedState 2
+					baseState = action
 				}
 			} else {
 				if (__DEV__) {
@@ -82,11 +82,11 @@ export const processUpdateQueue = <State>(
 		} while (pending !== first);
 		const action = pendingUpdate.action;
 		if (action instanceof Function) {
-			result.memorizedState = action(baseState);
+			result.memoizedState = action(baseState);
 		} else {
-			result.memorizedState = action;
+			result.memoizedState = action;
 		}
 	}
-	result.memorizedState = baseState;
+	result.memoizedState = baseState;
 	return result;
 };
