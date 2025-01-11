@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-level Menu</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <style>
+        body {
+            display: flex;
+        }
+
+        #content {
+            flex: 1;
+            padding: 20px;
+        }
+
+        #menu {
+            width: 200px;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            overflow-y: auto;
+            background-color: #f4f4f4;
+            border-left: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        #menu ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #menu li {
+            margin: 10px 0;
+        }
+
+        #menu a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        #menu a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <div id="content">
+        <!-- 富文本内容 -->
+        <h1>Title 1</h1>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum fugit rem dolorum modi, voluptate praesentium iste expedita excepturi. Dicta nulla eum deleniti nisi soluta doloribus asperiores iusto? Eveniet, veniam odit.</p>
+        <h2>Subtitle 1.1</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dignissimos aperiam omnis iusto a nemo nam laboriosam placeat, eveniet voluptate qui voluptatibus enim architecto assumenda cumque, esse at ipsa itaque error!</p>
+        <h2>Subtitle 1.2</h2>
+        <p>Even more content...</p>
+        <h1>Title 2</h1>
+        <p>Another content...</p>
+        <h2>Subtitle 2.1</h2>
+        <p>Additional content...</p>
+    </div>
+    <div id="menu"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const content = document.getElementById('content');
+            const menu = document.getElementById('menu');
+            const headings = content.querySelectorAll('h1, h2');
+
+            const menuList = document.createElement('ul');
+            let currentH1 = null;
+
+            headings.forEach(heading => {
+                const listItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = `#${heading.textContent.replace(/\s+/g, '-').toLowerCase()}`;
+                link.textContent = heading.textContent;
+                heading.id = heading.textContent.replace(/\s+/g, '-').toLowerCase();
+
+                listItem.appendChild(link);
+
+                if (heading.tagName === 'H1') {
+                    currentH1 = document.createElement('ul');
+                    listItem.appendChild(currentH1);
+                    menuList.appendChild(listItem);
+                } else if (heading.tagName === 'H2' && currentH1) {
+                    currentH1.appendChild(listItem);
+                }
+            });
+
+            menu.appendChild(menuList);
+        });
+    </script>
+</body>
+
+</html>

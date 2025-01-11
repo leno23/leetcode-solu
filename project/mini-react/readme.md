@@ -1125,3 +1125,48 @@ describe('ReactHooksWithNoopRenderer', () => {
 	});
 });
 ```
+
+```js
+function App() {
+	return (
+		<>
+			<Child />
+			<div>hello world</div>
+		</>
+	);
+}
+
+function Child() {
+	return 'Child';
+}
+```
+
+经由Noop-Renderer渲染后得到树状结构如下
+
+```json
+{
+	"rootID": 0,
+	"children": [
+		{
+			"text": "Child",
+			"id": 0,
+			"parent": 0
+		},
+		{
+			"id": 2,
+			"type": "div",
+			"children": [
+				{
+					"text": "hello world",
+					"id": 1,
+					"parent": "2"
+				}
+			],
+			"parentId": 0,
+			"props": {
+				"children": "hello world"
+			}
+		}
+	]
+}
+```

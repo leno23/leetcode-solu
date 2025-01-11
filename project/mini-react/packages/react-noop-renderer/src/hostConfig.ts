@@ -1,5 +1,5 @@
 import { FiberNode } from 'react-reconciler/src/fiber';
-import { HostComponent, HostText } from 'react-reconciler/src/workTags';
+import { HostText } from 'react-reconciler/src/workTags';
 import { Props } from 'shared/ReactTypes';
 
 export interface Container {
@@ -98,3 +98,11 @@ export function insertChildToContainer(
 	}
 	container.children.splice(beforeIndex, 0, child);
 }
+
+
+export const scheduleMicroTask =
+	typeof queueMicrotask === 'function'
+		? queueMicrotask
+		: typeof Promise === 'function'
+			? (callback: (...args: any) => void) => Promise.resolve(null).then(callback)
+			: setTimeout;
