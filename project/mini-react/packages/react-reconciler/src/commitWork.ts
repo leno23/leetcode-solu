@@ -230,7 +230,7 @@ const commitPlacement = (finishedWork: FiberNode) => {
 		console.warn('执行Placement操作', finishedWork);
 	}
 	// parent DOM
-	const hostParent = getHostParent(finishedWork) as Element;
+	const hostParent = getHostParent(finishedWork) as Container;
 
 	const sibling = getHostSibling(finishedWork);
 	// finishedWork DOM

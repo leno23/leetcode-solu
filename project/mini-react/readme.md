@@ -971,18 +971,23 @@ processUpdateQueue方法消费update时需要考虑
 移除【本地更新被消费的Lane】
 
 ## 实现useEffect
+
 实现useEffect需要考虑的
+
 - effect数据结构
+
 ```
-fiber.memoizedState = useEffect --> useState               useEffect      
+fiber.memoizedState = useEffect --> useState               useEffect
                         |              |                    |
                       memoizedState   memoizedState     memoizedState
                       next            next    -->       next
                       updateQuque     updateQueue       updateQueue
                       ...             ...               ...
 ```
+
 - effect的工作流程如何接入到现有流程
-什么是effect
+  什么是effect
+
 ```
 
 function App(){
@@ -995,46 +1000,56 @@ function App(){
   useEffect(() => {},[])
 }
 ```
+
 数据结构需要考虑
+
 - 不同effect可以同一个机制
-  - useEffect     依赖变化以后的当前commit阶段完成后 异步执行
-  - useLayoutEffect    commit完成后  同步执行
-  - useInsertionEffect  拿不到dom引用，一般给cssinjs库使用
+  - useEffect 依赖变化以后的当前commit阶段完成后 异步执行
+  - useLayoutEffect commit完成后 同步执行
+  - useInsertionEffect 拿不到dom引用，一般给cssinjs库使用
 - 需要能保存依赖
 - 需要能保存create回调
 - 需要能保存destory回调
 - 需要能够区分是否需要触发create回调
   - mount时
   - 依赖变化时
+
 ```js
 const effect = {
-  tag,
-  create,
-  destory,
-  deps,
-  next
-}
+	tag,
+	create,
+	destory,
+	deps,
+	next
+};
 ```
+
 注意区分本节课中新增的3个flags
+
 - 对于fiber，新增PassiveEffect，代表【当前fiber本次更新存在副作用】
 - 对于effect hook、Passive代表【useEffect对应的effect】
 - 对于effect hook、HookHasEffect代表【当前effect本次更新存在副作用】
+
 ```
 fiberNode                            fiber  -> PassiveEffect
 useEffect  -> Passive                useEffect  Passive
 useState                             useState
 useLayoutEffect    --> layout        useLayoutEffect --> Passive | HookHasEffect
 ```
+
 - 为了方便使用，最好和其他effect连接成链表render时重置effect链表
+
 ```
-fiber.memoizedState = useEffect -->         useState                 useEffect      
+fiber.memoizedState = useEffect -->         useState                 useEffect
                         |          =>next        |          =>next       |
                       memoizedState         memoizedState            memoizedState
                       next                  next    -->              next
                       updateQuque           updateQueue              updateQueue
                       ...                   ...                      ...
 ```
+
 ### effect的工作原理
+
 ```
 render阶段
 FC FiberNoe    存在副作用
@@ -1045,4 +1060,68 @@ commit阶段
 
     ↓
   执行副作用
+```
+
+## 实现noop-renderer
+
+到目前为止我们实现的效果
+
+- 核心模块：Reconciler
+- 公共方法：React
+- 浏览器宿主环境：ReactDOM
+  当前项目的问题：测试用例太单薄，无法照顾到项目的边界情况，但课程时长有限，无法覆盖所有用例
+  解决办法：构建成熟的React测试环境，实现测试工具，学员按需跑通用例
+
+为了测试Reconciler，我们需要构建【宿主环境无关的渲染器】，这就是react-noop-renderer
+以下是实用noop-renderer的一个用例
+
+```js
+let React;
+let ReactDOM;
+let Scheduler;
+let act;
+let useEffect;
+
+describe('ReactHooksWithNoopRenderer', () => {
+	beforeEach(() => {
+		jest.resetModules();
+		jest.useFakeTimers();
+
+		React = require('react');
+		act = require('jest-react').act;
+
+		Scheduler = require('scheduler');
+		ReactNoop = require('react-noop-renderer');
+
+		useEffect = React.useEffect;
+	});
+
+	test('passive unmount on deletion are fired in parent', () => {
+    const root = ReactNoop.createRoot()
+    function Parent(){
+      useEffect(() => {
+        return () => Scheduler.unstable_yieldValue('Unmount parent');
+      });
+      return <Child />;
+
+    }
+    function Child(){
+      useEffect(() => {
+        return () => {
+          Scheduler.unstable_yieldValue('Unmount child')
+        }
+      })
+      return 'Child'
+    }
+    await act(saync () => {
+      root.render(<Parent />)
+    })
+
+    expect(root).toMatchRenderedOutput('Child')
+    await act(async () => {
+      root.render(null)
+    })
+    expect(Scheduler).toHaveYielded('Unmount parent')
+	});
+});
 ```

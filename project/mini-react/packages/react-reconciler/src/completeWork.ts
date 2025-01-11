@@ -1,12 +1,24 @@
-import { appendInitialChild, createInstance, createTextInstance } from 'hostConfig';
+import {
+	Container,
+	Instance,
+	appendInitialChild,
+	createInstance,
+	createTextInstance
+} from 'hostConfig';
 import { FiberNode } from './fiber';
-import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './workTags';
+import {
+	Fragment,
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText
+} from './workTags';
 import { NoFlags, Update } from './fiberFlags';
 import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
 
 const markUpdate = (fiber: FiberNode) => {
-	fiber.flags |= Update
-}
+	fiber.flags |= Update;
+};
 
 export const completeWork = (wip: FiberNode) => {
 	// 递归中的归
@@ -19,7 +31,8 @@ export const completeWork = (wip: FiberNode) => {
 				// update
 				// 1.props是否变化  {onClick: xxx}  {onClick: xxx2}
 				// 2.变了 Update flag
-				updateFiberProps(wip.stateNode, newProps)
+				markUpdate(wip)
+				updateFiberProps(wip.stateNode, newProps);
 			} else {
 				// 1.构建dom
 				// 将dom插入到dom树中
@@ -32,10 +45,10 @@ export const completeWork = (wip: FiberNode) => {
 		case HostText:
 			if (current !== null && wip.stateNode) {
 				// update
-				const oldText = current.memorizedProps.content
-				const newText = newProps.content
+				const oldText = current.memorizedProps.content;
+				const newText = newProps.content;
 				if (oldText != newText) {
-					markUpdate(wip)
+					markUpdate(wip);
 				}
 			} else {
 				// 1.构建dom
@@ -47,7 +60,7 @@ export const completeWork = (wip: FiberNode) => {
 		case HostRoot:
 		case FunctionComponent:
 		case Fragment:
-			bubbleProperties(wip)
+			bubbleProperties(wip);
 			return null;
 		default:
 			if (__DEV__) {
@@ -57,7 +70,7 @@ export const completeWork = (wip: FiberNode) => {
 	}
 };
 
-function appendAllChildren(parent: Element, wip: FiberNode) {
+function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
 	let node = wip.child;
 	while (node !== null) {
 		if (node.tag === HostComponent || node.tag === HostText) {
@@ -82,14 +95,14 @@ function appendAllChildren(parent: Element, wip: FiberNode) {
 }
 
 function bubbleProperties(wip: FiberNode) {
-	let subtreeFlags = NoFlags
-	let child = wip.child
+	let subtreeFlags = NoFlags;
+	let child = wip.child;
 	while (child !== null) {
-		subtreeFlags |= child.subtreeFlags
-		subtreeFlags |= child.flags
+		subtreeFlags |= child.subtreeFlags;
+		subtreeFlags |= child.flags;
 
-		child.return = wip
-		child = child.sibling
-	} 
-	wip.subtreeFlags |= subtreeFlags
+		child.return = wip;
+		child = child.sibling;
+	}
+	wip.subtreeFlags |= subtreeFlags;
 }

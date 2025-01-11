@@ -86,7 +86,7 @@ const App6 = () => {
   return <div onClick={() => {
     setNum(num + 1)
   }}>
-    {num===0 ? <Child /> : 'noop'}
+    {num === 0 ? <Child /> : 'noop'}
   </div>
 }
 

@@ -19,5 +19,9 @@
   
   <script setup lang="ts">
   import { UploadFilled } from '@element-plus/icons-vue'
+import { ref } from 'vue';
+  const name = ref('jack')
+  console.log(name);
+  
   </script>
   
