@@ -1291,4 +1291,98 @@ reactTestMatchers.js
 - 高优先级更新打断低优先级更新
 
 ### 扩展state计算机制
-扩展【根据lane对应update计算state
+
+扩展【根据lane对应update计算state】的机制，主要包括
+
+- 通过update计算state时可以跳过【优先级不够的update】
+- 由于【高优先级任务打断低优先级任务】，同一个组件中【根据update计算state】的流程可能会多次执行，所以需要保存update
+
+### 跳过update需要考虑的问题
+
+如何比较【优先级是否足够】？
+lane数值大小的直接比较不够灵活
+如何同时兼顾【update的连续性】与【update的优先级】
+
+```js
+// u0
+{
+  action: num => num + 1,
+  lane: DefaultLane
+}
+
+// u1
+{
+  action: 1,
+  lane: SyncLane
+}
+// u2
+{
+  action: num => num + 10,
+  lane: DefaultLane
+}
+
+// state = 0; updateLane = DefaultLane
+// 只考虑优先级情况下的结果 11
+// 只考虑连续性情况下的结果 13
+
+
+```
+
+新增baseStaet、baseQueue字段
+
+- baseState是本地更新参与计算的初始state，memoizedState是上次更新计算最终state
+- 如果本地更新没有update被跳过，则下次更新开始时baseState===memoizedState
+- 如果本地更新有update被跳过，则本地更新计算出的memoizedState为【考虑优先级】情况下计算的结果，baseState为【最后一个没有被跳过的update计算后的等结果】，下次更新开始时baseState !== memoizedState
+- 本次更新【被跳过的update及其后面的所有update】都会被保存在baseQueue中参与下次state计算
+- 本地更新【参与计算但保存在baseQueue中的update】，优先级会降低到NoLane
+
+```js
+// u0
+{
+  action: num => num + 1,
+  lane: DefaultLane
+}
+
+// u1
+{
+  action: 1,
+  lane: SyncLane
+}
+// u2
+{
+  action: num => num + 10,
+  lane: DefaultLane
+}
+
+第一次render
+baseState=0 memoizedState=0
+baseQueue = null updateLane =Default
+第一次render 第一次计算
+baseState=1 memoizedState=1
+baseQueue - null
+第一次render 第二次计算
+baseState=1 memoizedState=1
+baseQueue - u1
+第一次render 第三次计算
+baseState=1 memoizedState=11
+baseQueue - u1 -> u2(NoLane)
+
+第二次render
+baseState=1 memoizedState=11
+baseQueue=u1 -> u2(NoLane) updateLane=SyncLane
+第二次render 第一次计算
+baseState=1 memoizedState=3
+第二次render 第二次计算
+baseState=13 memoizedState=13
+
+
+
+```
+
+### 保存update的问题
+
+考虑将update保存到current中，只要不进入commit阶段，current与wip不会互换，所以保存在current中，即使多次执行render阶段，，只要不进入commit阶段，都能从current中恢复数据
+
+### 课后思考
+
+TODO 扩展renderLane的灵活性 将其扩展为renderLanes 更好利用Lanes这一数据结构能够表示多种lane的集合的能力

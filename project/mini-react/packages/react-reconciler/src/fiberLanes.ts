@@ -26,13 +26,16 @@ export function requestUpdateLane() {
 	// 从上下文环境获取Scheduler优先级
 	const currentSchedulerPriority = unstable_getCurrentPriorityLevel();
 	const lane = schedulerPriorityToLanes(currentSchedulerPriority);
-	return lane
+	return lane;
 }
 
 // 获取优先级最高的lane，lane越小优先级越高
 export function getHighestPriorityLane(lanes: Lanes): Lane {
 	// 获取二进制中最低位的1的位权
 	return lanes & -lanes;
+}
+export function isSubsetOfLanes(set: Lanes, subset: Lane) {
+	return (set & subset) === subset;
 }
 
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
@@ -53,15 +56,15 @@ export function lanesToSchedulerPriority(lanes: Lanes) {
 	return unstable_IdlePriority;
 }
 
-export function schedulerPriorityToLanes (schedulerPriority:number) {
-	if(schedulerPriority === unstable_ImmediatePriority){
-		return SyncLane
+export function schedulerPriorityToLanes(schedulerPriority: number) {
+	if (schedulerPriority === unstable_ImmediatePriority) {
+		return SyncLane;
 	}
-	if(schedulerPriority === unstable_UserBlockingPriority){
-		return InputContinuousLane
+	if (schedulerPriority === unstable_UserBlockingPriority) {
+		return InputContinuousLane;
 	}
-	if(schedulerPriority === unstable_NormalPriority){
-		return DefaultLane
+	if (schedulerPriority === unstable_NormalPriority) {
+		return DefaultLane;
 	}
-	return NoLane
+	return NoLane;
 }
