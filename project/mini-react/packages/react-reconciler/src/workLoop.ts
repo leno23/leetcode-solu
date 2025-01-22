@@ -19,6 +19,7 @@ import {
 	NoLane,
 	SyncLane,
 	getHighestPriorityLane,
+	lanesToSchedulerPriority,
 	markRootFinished,
 	mergeLanes
 } from './fiberLanes';
@@ -30,15 +31,25 @@ import {
 import { HostRoot } from './workTags';
 import {
 	unstable_scheduleCallback as schedulerCallback,
-	unstable_NormalPriority as NormalPriority
+	unstable_NormalPriority as NormalPriority,
+	unstable_shouldYield,
+	unstable_cancelCallback
 } from 'scheduler';
 
 let workInProgress: FiberNode | null = null;
 let wipRootRenderLane: Lane = NoLane; // 本次更新的lane
 let rootDoesHasPassiveEffect: boolean = false;
 
+// render阶段退出的状态
+type RootExitStatus = number;
+const RootInComplete = 1;
+const RootCompleted = 2;
+// TODO 执行过程中报错了
+
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 	// 为hostRoot创建wip
+	root.finishedLane = NoLane;
+	root.finishedWork = null;
 	workInProgress = createWorkInProgress(root.current, {});
 	wipRootRenderLane = lane;
 }
@@ -57,20 +68,47 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 
 function ensureRootIsScheduled(root: FiberRootNode) {
 	const updateLane = getHighestPriorityLane(root.pendingLanes);
+	const existingCallback = root.callbackNode;
+
+	// 没有work要做了
 	if (updateLane === NoLane) {
+		if (existingCallback !== null) {
+			unstable_cancelCallback(existingCallback);
+		}
+		root.callbackNode = null;
+		root.callbackPriority = NoLane;
 		return;
 	}
+
+	const curPriority = updateLane;
+	const prePriority = root.callbackPriority;
+	// 当前优先级和之前的优先级一样的话
+	if (curPriority === prePriority) {
+		return;
+	}
+	if (existingCallback !== null) {
+		unstable_cancelCallback(existingCallback);
+	}
+	let newCallbackNode = null;
 	if (updateLane === SyncLane) {
 		// 同步优先级，用微任务调度
 		if (__DEV__) {
 			console.log('在微任务中调度，优先级', updateLane);
 		}
 		// syncQueue:  [performSyncWorkOnRoot,performSyncWorkOnRoot,...]
-		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane));
+		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
 		scheduleMicroTask(flushSyncCallbacks);
 	} else {
 		// 其他优先级  用宏任务调度   Vue Svelte中没有这个逻辑
+		const schedulerPriority = lanesToSchedulerPriority(updateLane);
+		// @ts-ignore
+		newCallbackNode = schedulerCallback(
+			schedulerPriority,
+			performConcurrentWorkOnRoot.bind(null, root)
+		);
 	}
+	root.callbackNode = newCallbackNode;
+	root.callbackPriority = curPriority;
 }
 
 function markRootUpdated(root: FiberRootNode, lane: Lane) {
@@ -90,23 +128,82 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 	return null;
 }
 
+function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout: boolean): any {
+	// 保证useEffect回调执行
+	const curCallback = root.callbackNode;
+	const didFlushPassiveEffects = flushPassiveEffects(root.pendingPassiveEffect);
+	// 如果useEffect有更高优先级的任务，应该停止当前执行
+	if (didFlushPassiveEffects) {
+		if (root.callbackNode !== curCallback) {
+			return null;
+		}
+	}
+	const lane = getHighestPriorityLane(root.pendingLanes);
+	const curCallbackNode = root.callbackNode;
+	if (lane !== NoLane) {
+		return null;
+	}
+	// @ts-ignore
+	const needSync = lane === SyncLane || didTimeout;
+	// render阶段
+	const exitStatus = renderRoot(root, lane, !needSync);
+
+	ensureRootIsScheduled(root);
+
+	if (exitStatus === RootInComplete) {
+		// 中断
+		if (root.callbackNode !== curCallbackNode) {
+			return null;
+		}
+		return performConcurrentWorkOnRoot.bind(null, root);
+	}
+	if (exitStatus === RootCompleted) {
+		const finishedWork = root.current.alternate;
+		root.finishedWork = finishedWork;
+		root.finishedLane = lane;
+		wipRootRenderLane = NoLane;
+
+		// wip fiberNode树 树中的flags
+		commitRoot(root);
+	} else if (__DEV__) {
+		console.error(`还未实现的并发更新结束状态`);
+	}
+}
+
 // 触发更新流程
-function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
-	const nextLines = getHighestPriorityLane(root.pendingLanes);
-	if (nextLines !== SyncLane) {
+function performSyncWorkOnRoot(root: FiberRootNode) {
+	const nextLine = getHighestPriorityLane(root.pendingLanes);
+	if (nextLine !== SyncLane) {
 		// 其他比SyncLane低的优先级
 		// NoLane
 		ensureRootIsScheduled(root);
 		return;
 	}
-	if (__DEV__) {
-		console.log('render阶段开始');
+	const exitStatus = renderRoot(root, nextLine, false);
+	if (exitStatus === RootInComplete) {
+		const finishedWork = root.current.alternate;
+		root.finishedWork = finishedWork;
+		root.finishedLane = nextLine;
+		wipRootRenderLane = NoLane;
+
+		// wip fiberNode树 树中的flags
+		commitRoot(root);
+	} else if (__DEV__) {
+		console.error(`还未实现的同步更新结束状态`);
 	}
-	// 初始化
-	prepareFreshStack(root, lane);
+}
+
+function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
+	if (__DEV__) {
+		console.log(`开始${shouldTimeSlice ? '并发' : '同步'}更新`, root);
+	}
+	if (wipRootRenderLane !== lane) {
+		// 初始化
+		prepareFreshStack(root, lane);
+	}
 	do {
 		try {
-			workLoop();
+			shouldTimeSlice ? workLoopConcurrent() : workLoopSync();
 			break;
 		} catch (e) {
 			if (__DEV__) {
@@ -115,15 +212,14 @@ function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
 			workInProgress = null;
 		}
 	} while (true);
-	// root.current hostRootFiber
-	// root.current  wip Fiber
-	const finishedWork = root.current.alternate;
-	root.finishedWork = finishedWork;
-	root.finishedLane = lane;
-	wipRootRenderLane = NoLane;
-
-	// wip fiberNode树 树中的flags
-	commitRoot(root);
+	if (shouldTimeSlice && workInProgress !== null) {
+		return RootInComplete;
+	}
+	if (!shouldTimeSlice && workInProgress !== null && __DEV__) {
+		console.error(`render阶段结束时wip不应该不为null`);
+	}
+	// TODO 报错
+	return RootCompleted;
 }
 function commitRoot(root: FiberRootNode) {
 	const finishedWork = root.finishedWork;
@@ -173,22 +269,33 @@ function commitRoot(root: FiberRootNode) {
 	ensureRootIsScheduled(root);
 }
 function flushPassiveEffects(pendingPassiveEffect: pendingPassiveEffect) {
+	// 副作用函数是否执行
+	let didFlushPassiveEffects = false;
 	pendingPassiveEffect.unmount.forEach((effect) => {
+		didFlushPassiveEffects = true;
 		commitHookEffectListUnmount(Passive, effect);
 	});
 	pendingPassiveEffect.unmount = [];
 
 	pendingPassiveEffect.update.forEach((effect) => {
+		didFlushPassiveEffects = true;
 		commitHookEffectListDestory(Passive | HookHasEffect, effect);
 	});
 	pendingPassiveEffect.update.forEach((effect) => {
+		didFlushPassiveEffects = true;
 		commitHookEffectListCreate(Passive | HookHasEffect, effect);
 	});
 	pendingPassiveEffect.update = [];
-	flushSyncCallbacks()
+	flushSyncCallbacks();
+	return didFlushPassiveEffects;
 }
-function workLoop() {
+function workLoopSync() {
 	while (workInProgress !== null) {
+		performUnitOfWork(workInProgress);
+	}
+}
+function workLoopConcurrent() {
+	while (workInProgress !== null && !unstable_shouldYield) {
 		performUnitOfWork(workInProgress);
 	}
 }

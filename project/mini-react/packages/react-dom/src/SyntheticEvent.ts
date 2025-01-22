@@ -1,4 +1,5 @@
 import { Container } from 'hostConfig';
+import { unstable_ImmediatePriority, unstable_NormalPriority, unstable_UserBlockingPriority, unstable_runWithPriority } from 'scheduler';
 import { Props } from 'shared/ReactTypes';
 
 export const elementPropsKey = '__props'
@@ -70,7 +71,10 @@ export function dispatchEvent(container: Container, eventType: string, e: Event)
 export function triggerEventFlow(paths: EventCallbacks[], se: SyntheticEvent) {
     for (let i = 0; i < paths.length; i++) {
         const callback = paths[i]
-        callback.call(null, se)
+        // 将当前上下文环境的优先级，改成我们传入的优先级
+        unstable_runWithPriority(eventTypeToSchedulerPriority(se.type), () => {
+            callback.call(null, se)
+        })
         if (se.__stopProppagation) {
             break
         }
@@ -109,4 +113,17 @@ export function collectPaths(targetElement: DOMElement, container: Container, ev
         targetElement = targetElement.parentNode as DOMElement
     }
     return paths
+}
+
+function eventTypeToSchedulerPriority (eventType: string) {
+    switch(eventType){
+        case 'click':
+        case 'keydown':
+        case 'keyup':
+            return unstable_ImmediatePriority
+        case 'scroll':
+            return unstable_UserBlockingPriority
+        default:
+            return unstable_NormalPriority
+    }
 }

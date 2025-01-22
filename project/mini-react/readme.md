@@ -1170,3 +1170,125 @@ function Child() {
 	]
 }
 ```
+
+## 完善Reconciler测试环境
+
+需要思考的问题：如何在并发环境测试运行结果？比如：
+
+- 如何控制异步执行的时间？ 使用mock timer
+- 如何记录并发情况下预期的执行顺序
+
+### 完善并发测试环境
+
+安装并发的测试上下文环境
+
+```
+pnpm i -w jest-react
+```
+
+### 安装matchers
+
+reactTestMatchers.js
+
+### 当前我们为测试做的准备
+
+- 针对ReactDOM宿主环境： ReactTestUtils
+- 针对Reconsiler的测试： React-Noop-Renderer
+- 针对并发环境的测试：jest-react,Scheduler,React-Noop-Renderer配合使用
+
+## 并发更新的原理
+
+本节课对标《React设计原理》 5.1节
+思考问题：我们当前的实现是如何驱动的1.交互触发更新2.调度阶段微任务调度（ensureRootIsScheduled方法）3.微任务调度结束，进入render阶段
+4.render阶段结束，进入commit阶段
+5.commit阶段结束，调度阶段微任务调度（ensureRootIsScheduled）
+整体是个大的任务循环，循环的驱动力是【微任务调度模块】
+
+### 同步示例
+
+              插入work     workList
+    交互       ---→   [work1  work2 ...] ---   取出work
+               ---→  scheduler          ←--
+    执行完，   |        ↓调度出work，交给perform
+    继续调度    ----  perform
+
+示例在两种情况喜爱会造成阻塞
+
+- work.count数量太多
+- 单个work.count工作量太大
+
+并发更新的理论基础
+并发更新的基础是【时间切片】
+
+### 改造示例
+
+如果我们想在宏任务中完成任务调度，本质上是个大的宏任务循环，循环的驱动力是Scheduler
+
+> > 理论基础参考《React设计原理》
+> > 在微任务调度中，没有[优先级]的概念，对于Scheduler存在5中优先级
+
+- ImmeduatePriority
+- UserBlockingPriority
+- NormalPriority
+- LowPriority
+- IdlePriority
+
+需要考虑的情况
+
+### 工作过程仅有一个work
+
+如果仅有一个work，scheduler有个优化路径：如果调度的回调函数的返回是函数，则会继续调度返回的函数
+
+### 工作过程中产生相同优先级的work
+
+如果优先级相同，则不需要开启新的调度
+
+### 工作过程中产生更低/高优先级的work
+
+把握一个原则，我们每次选出的都是优先级最高的work
+
+## 实现并发更新
+
+要实现并发更新，需要做的改动包括
+
+- Lane模型增加更多优先级
+- 交互与优先级对应
+- 调度阶段引入Scheduler，新增调度策略逻辑
+- render阶段可中断
+- 根据update计算state的算法需要修改
+
+### 拓展交互
+
+思考一个问题，优先级从何而来
+答案：不同交互对应不同优先级
+可以根据【触发更新的上下文环境】赋予不同优先级，比如：
+
+- 点击事件需要同步处理
+- 滚动事件优先级再低点
+- 。。。
+  更进一步，还能推广到任何【可以触发更新的上下文环境】比如：
+- useEffect create回调中触发更新的优先级
+- 首屏渲染的优先级
+
+下一个问题：这些优先级的改动如何影响更新？
+答案：只要优先级能影响update，就能影响更新。
+当前我们掌握的与优先级相关的信息，包括
+
+- Scheduler的5种优先级
+- React中的lane模型
+  也就是说，运行流程在React时，使用的是Lane模型，运行流程在Scheduler时，使用的是优先级，所以需要实现两者的转换
+- lanesToSchedulerPriority
+- schedulerPriorityToLane
+
+### 扩展调度阶段
+
+主要是在同步更新（微任务调度）的基础上扩展并发更新(Scheduler调度)，主要包括
+
+- 将Demo中的调度策略移到项目中
+- render阶段变为【可中断】
+  梳理两种典型场景
+- 时间切片
+- 高优先级更新打断低优先级更新
+
+### 扩展state计算机制
+扩展【根据lane对应update计算state
