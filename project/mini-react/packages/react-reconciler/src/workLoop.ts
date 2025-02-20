@@ -140,7 +140,7 @@ function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout: boolean): 
 	}
 	const lane = getHighestPriorityLane(root.pendingLanes);
 	const curCallbackNode = root.callbackNode;
-	if (lane !== NoLane) {
+	if (lane === NoLane) {
 		return null;
 	}
 	// @ts-ignore
@@ -197,12 +197,14 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
 	if (__DEV__) {
 		console.log(`开始${shouldTimeSlice ? '并发' : '同步'}更新`, root);
 	}
+	// 是否是新的lane
 	if (wipRootRenderLane !== lane) {
 		// 初始化
 		prepareFreshStack(root, lane);
 	}
 	do {
 		try {
+			//是否开启了时间切片
 			shouldTimeSlice ? workLoopConcurrent() : workLoopSync();
 			break;
 		} catch (e) {
@@ -212,9 +214,11 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
 			workInProgress = null;
 		}
 	} while (true);
+	// 中断执行
 	if (shouldTimeSlice && workInProgress !== null) {
 		return RootInComplete;
 	}
+	// 或者执行完了
 	if (!shouldTimeSlice && workInProgress !== null && __DEV__) {
 		console.error(`render阶段结束时wip不应该不为null`);
 	}

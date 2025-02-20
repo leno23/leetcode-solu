@@ -1375,8 +1375,6 @@ baseState=1 memoizedState=3
 第二次render 第二次计算
 baseState=13 memoizedState=13
 
-
-
 ```
 
 ### 保存update的问题

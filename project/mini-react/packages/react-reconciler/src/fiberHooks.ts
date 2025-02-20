@@ -3,6 +3,7 @@ import { FiberNode } from './fiber';
 import { Dispatcher } from 'react/src/currentDispatcher';
 import { Dispatch } from 'react/src/currentDispatcher';
 import {
+	Update,
 	UpdateQueue,
 	createUpdate,
 	createUpdateQueue,
@@ -27,6 +28,8 @@ interface Hook {
 	memoizedState: any;
 	updateQueue: unknown;
 	next: Hook | null;
+	baseState: any;
+	baseQueue: Update<any> | null;
 }
 
 export interface Effect {
@@ -154,11 +157,38 @@ function updateState<State>(): [State, Dispatch<State>] {
 
 	// 计算新state的逻辑
 	const queue = hook.updateQueue as UpdateQueue<State>;
+	const baseState = hook.baseState;
 	const pending = queue.shared.pending;
-	queue.shared.pending = null;
+	const current = currentHook as Hook;
+	let baseQueue = current.baseQueue;
+
+
+	
 	if (pending !== null) {
-		const { memoizedState } = processUpdateQueue(hook.memoizedState, pending, renderLane);
-		hook.memoizedState = memoizedState;
+		// pending baseQueue update保存在current中
+		if(baseQueue !== null){
+			// baseQueue = a -> b -> a
+			// pendingQueue = c -> d -> c
+			//
+			const baseFirst = baseQueue.next;
+			const pendingFirst = pending.next;
+
+			baseQueue.next = pendingFirst;	
+			pending.next = baseFirst;
+		}
+		baseQueue = pending;
+		current.baseQueue = pending
+		queue.shared.pending = null
+		if(baseQueue !== null){
+			const {
+				memoizedState,
+				baseQueue: newBaseQueue,
+				baseState: newBaseState
+			} = processUpdateQueue(baseState, baseQueue, renderLane);
+			hook.memoizedState = memoizedState;
+			hook.baseState = newBaseState;
+			hook.baseQueue = newBaseQueue;
+		}
 	}
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>];
 }
@@ -211,7 +241,9 @@ function mountWorkInProgressHook(): Hook {
 	const hook: Hook = {
 		memoizedState: null,
 		updateQueue: null,
-		next: null
+		next: null,
+		baseQueue: currentHook!.baseQueue,
+		baseState: currentHook!.baseState
 	};
 	if (workInProgressHook === null) {
 		if (currentlyRenderingFiber === null) {
@@ -257,7 +289,9 @@ function updateWorkInProgressHook(): Hook {
 	const newHook: Hook = {
 		memoizedState: currentHook.memoizedState,
 		updateQueue: currentHook.updateQueue,
-		next: null
+		next: null,
+		baseQueue: null,
+		baseState: null
 	};
 	if (workInProgressHook === null) {
 		if (currentlyRenderingFiber === null) {

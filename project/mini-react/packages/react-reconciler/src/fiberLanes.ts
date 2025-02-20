@@ -34,10 +34,11 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
 	// 获取二进制中最低位的1的位权
 	return lanes & -lanes;
 }
+// subset优先级是否足够，是否是set的子集
 export function isSubsetOfLanes(set: Lanes, subset: Lane) {
 	return (set & subset) === subset;
 }
-
+// 添加标记
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
 	root.pendingLanes &= ~lane;
 }

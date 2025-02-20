@@ -1,7 +1,6 @@
 import { Dispatch } from 'react/src/currentDispatcher';
 import { Action } from 'shared/ReactTypes';
 import { Lane, isSubsetOfLanes } from './fiberLanes';
-import { render } from 'react-dom';
 
 export interface Update<State> {
 	action: Action<State>;
@@ -71,7 +70,7 @@ export const processUpdateQueue = <State>(
 		let newState = baseState;
 		do {
 			const updateLane = pending.lane;
-			if (!isSubsetOfLanes(render, updateLane)) {
+			if (!isSubsetOfLanes(renderLane, updateLane)) {
 				// 优先级不够 被跳过
 				const clone = createUpdate(pending.action, pending.lane);
 				// 是不是第一个被跳过的
@@ -80,6 +79,8 @@ export const processUpdateQueue = <State>(
 					newBaseQueueLast = clone;
 					newBaseState = newState;
 				} else {
+					// first        last
+					//  u0 -> u1 -> u2
 					(newBaseQueueLast as Update<State>).next = clone;
 					newBaseQueueLast = clone;
 				}
@@ -90,7 +91,7 @@ export const processUpdateQueue = <State>(
 					newBaseQueueLast.next = clone;
 					newBaseQueueLast = clone;
 				}
-				const action = pendingUpdate.action;
+				const action = pending.action;
 				if (action instanceof Function) {
 					// baseState 1 update (x) => 4x -< memoizedState
 					newState = action(baseState);
@@ -102,11 +103,16 @@ export const processUpdateQueue = <State>(
 			pending = pending?.next as Update<any>;
 		} while (pending !== first);
 		if (newBaseQueueLast === null) {
+			// 本次计算没有update被跳过
 			newBaseState = newState;
 		} else {
+			// 合成一条环形链表
 			newBaseQueueLast.next = newBaseQueueFirst;
 		}
+		result.memoizedState = newState;
+		result.baseState = newBaseState;
+		result.baseQueue = newBaseQueueLast;
 	}
-	result.memoizedState = baseState;
+
 	return result;
 };
