@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .overlay{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <button onclick='show()'>显示模态框</button>
+    <button onclick='hide()'>隐藏模态框</button>
+    <script>
+        class Login{
+            constructor(){
+                this.el = document.createElement('div')
+                this.el.innerHTML = `
+                    <div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px;'>
+                        <input type='text'>
+                        <input type='password'>
+                        <button>登录</button>
+                    </div>
+                `
+                this.el.className = 'overlay'
+                window.addEventListener('click', (e) => {
+                    if(e.target === this.el){
+                        this.hide()
+                    }
+                })
+                document.body.appendChild(this.el)
+            }
+            show(){
+                this.el.style.display = 'block'
+            }
+            hide(){
+                this.el.style.display = 'none'
+            }
+            static getInstance(){
+                if(!this.instace){
+                    this.instace = new Login()
+                }
+                return this.instace
+            }
+        }
+        function show(){
+            Login.getInstance().show()
+        }
+        function hide(){
+            Login.getInstance().hide()
+        }
+    </script>
+</body>
+
+</html>
