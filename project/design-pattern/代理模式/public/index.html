@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id='menu'>
+        <button data-src='./image/1.webp'>pic 1</button>
+        <button data-src='./image/2.webp'>pic 2</button>
+    </div>
+    <div class="view"></div>
+    <script>
+        let menu = document.querySelector('#menu')
+        let view = document.querySelector('.view')
+        const Background = (() => {
+            let img = new Image()
+            view.appendChild(img)
+            return {
+                setSrc(src) {
+                    img.src = src +'?ts='+Date.now()
+                }
+            }
+        })()
+        const ProxyBackground = (() => {
+            let img = new Image()
+            img.onload = () => {
+                Background.setSrc(img.src)
+            }
+            return {
+                setSrc(src) {
+                    Background.setSrc('./loading')
+                    img.src = src
+                }
+            }
+        })()
+        menu.addEventListener('click', (e) => {
+            ProxyBackground.setSrc(e.target.dataset.src)
+        })
+    </script>
+</body>
+
+</html>

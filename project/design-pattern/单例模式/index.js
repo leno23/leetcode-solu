@@ -1,3 +1,4 @@
+// 全局只有一个实例
 class Window {
   constructor() {
     this.name = 'Window'
