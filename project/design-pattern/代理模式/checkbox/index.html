@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src='//unpkg.com/vue'></script>
+</head>
+
+<body>
+    <div id="app">
+        <li v-for='item of list' :key='item.id'>
+            <input type="checkbox" v-model='item.completed' :id='item.id' @change='change(item)'>
+            <label :for="item.id">{{item.text}}</label>
+        </li>
+    </div>
+</body>
+<script>
+    const { createApp, ref, onMounted } = Vue
+    createApp({
+        setup() {
+            const list = ref([])
+            let ids = ref([])
+            const toggle = (item) => {
+                fetch('/toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ids: ids.value
+                    })
+                }).then(v => {
+                    ids.value = []
+                })
+            }
+
+            const lazyToggle = (() => {
+                let timer = null
+                return (item) => {
+                    if (timer) {
+                        clearTimeout(timer)
+                    }
+                    timer = setTimeout(() => {
+                        toggle(item)
+                    }, 2000)
+                }
+            })()
+
+            const change = (item) => {
+                ids.value.push(item.id)
+                lazyToggle(item)
+            }
+
+            onMounted(() => {
+                fetch('/todos').then(v => v.json()).then(v => {
+                    list.value = v
+
+                })
+            })
+
+            return {
+                list,
+                change
+            }
+        }
+    }).mount('#app')
+</script>
+
+</html>

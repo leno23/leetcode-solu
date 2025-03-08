@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        p {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>当前状态: <span>断电状态</span></h3>
+    <p></p>
+    <div>
+        <button class='powerOn'>Power on</button>
+        <button class='powerOff'>Power Off</button>
+        <button class='startCook'>Start Cook</button>
+        <button class='open'>Open</button>
+        <button class='close'>Close</button>
+    </div>
+    <script>
+        class PowerOnState {
+            constructor(name) {
+                this.name = '接电状态'
+            }
+            powerOn = () => ctx.info('电源已经接上了')
+            powerOff = () => ctx.changeState(new PowerOffState())
+            startCook = () => ctx.changeState(new StartCookState())
+            open = () => ctx.changeState(new OpenState())
+            close = () => ctx.info('盖子没打开')
+        }
+        
+        class PowerOffState {
+            constructor(name) {
+                this.name = '断电状态'
+            }
+            powerOn = () => ctx.changeState(new PowerOnState)
+            powerOff = () => ctx.info('电源已经断开了')
+            startCook = () => ctx.info('接上电源再做饭')
+            open = () => ctx.changeState(new OpenState)
+            close = () => ctx.info('盖子已经关上了')
+        }
+        
+        class StartCookState {
+            constructor(name) {
+                this.name = '正在煮饭'
+            }
+            powerOn = () => ctx.info('电源已打开')
+            powerOff = () => ctx.changeState(new PowerOffState)
+            startCook = () => ctx.info('已经在煮饭了')
+            open = () => ctx.info('我会爆你一屋')
+            close = () => ctx.info('盖子已经关上了')
+        }
+        
+        class OpenState {
+            constructor(name) {
+                this.name = '盖子打开了'
+            }
+            powerOn = () => ctx.info('关上盖子之后接通电源')
+            powerOff = () => ctx.changeState(new PowerOffState())
+            startCook = () => ctx.info('先关上盖子')
+            open = () => ctx.info('盖子已经打开了')
+            close = () => ctx.changeState(new CloseState)
+        }
+        
+        class CloseState {
+            constructor(name) {
+                this.name = '盖子关上了'
+            }
+            powerOn = () => ctx.changeState(new PowerOnState())
+            powerOff = () => ctx.changeState(new PowerOffState())
+            startCook = () => ctx.info('没接电')
+            open = () => ctx.changeState(new OpenState())
+            close = () => ctx.info('盖子已经关上了')
+        }
+
+        class Context {
+            constructor() {
+                this.title = document.querySelector('h3 span')
+                this.infoEl = document.querySelector('p')
+                this.state = new PowerOffState()
+            }
+            info = txt => this.infoEl.innerText = txt
+            changeState(state) {
+                this.state = state
+                this.title.innerText = state.name
+                this.infoEl.innerText = ''
+            }
+            powerOn = () => this.state.powerOn()
+            powerOff = () => this.state.powerOff()
+            startCook = () => this.state.startCook()
+            open = () => this.state.open()
+            close = () => this.state.close()
+        }
+
+        let ctx = new Context()
+        let btns = document.querySelectorAll('button')
+        btns.forEach(v => v.addEventListener('click', ctx[v.className]))
+    </script>
+</body>
+
+</html>

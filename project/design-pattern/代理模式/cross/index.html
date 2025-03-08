@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        var receiveId = (data) => {
+            alert('用户ID='+data)
+        }
+        </script>
+        <iframe name='proxyIframe' id='proxyIframe' frameborder="0"></iframe>
+        <!-- 将一个跨域的请求提交到iframe里面，携带当前域信息，接口重定向到请求的域 同时携带数据 -->
+        <form action="http://localhost:4000/register" method='POST' target='proxyIframe'>
+            <input type="hidden" name='callback' value='receiveId'>
+            <input type="hidden" name='target' value='http://localhost:3002/target.html'>
+            用户名：<input type="text" name='username'>
+            密码：<input type="text" name='password'>
+            <input type="submit" value='提交'>
+        </form>
+</body>
+</html>

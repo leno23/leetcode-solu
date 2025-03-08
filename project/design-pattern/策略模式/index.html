@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <form action="" id='form'>
+        <p>用户名<input name='username' type="text"></p>
+        <p>密码<input name='password' type="text"></p>
+        <p>手机号<input name='phone' type="number"></p>
+        <p>邮箱<input type="email"></p>
+    </form>
+    <button id='submit'>提交</button>
+    <script>
+        let form = document.querySelector('form')
+        let validator = (() => {
+            let rules = {
+                username(val, cb) {
+                    if (!val) {
+                        return cb('用户名不能为空')
+                    }
+                    cb()
+                },
+                password(val, cb) {
+                    if (!val) {
+                        return cb('密码不能为空')
+                    }
+                    if (val.length < 8) {
+                        return cb('密码不能小于8位')
+                    }
+                    cb()
+                },
+                phone(val, cb) {
+                    if (!val) {
+                        return cb('手机号不能为空')
+                    }
+                }
+            }
+            const add = (name, cb) => {
+                rules[name] = cb
+            }
+            const validate = () => {
+                let keys = Object.keys(rules)
+                for (let key of keys) {
+                    let msg
+                    rules[key](form[key].value, val => {
+                        msg = val
+                    })
+                    if (msg) {
+                        return msg
+                    }
+                }
+            }
+            return {
+                add,
+                validate
+            }
+        })()
+        const submit = document.querySelector('#submit')
+        submit.onclick = () => {
+            let msg = validator.validate()
+            if (msg) {
+                alert(msg)
+            }
+            alert('提交成功')
+        }
+    </script>
+</body>
+
+</html>
