@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        canvas{
+            background: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id='canvas' width='1000' height='600'></canvas>
+    <script>
+        let canvas = document.querySelector('#canvas')
+        let ctx = canvas.getContext('2d')
+        let circles = []
+        function getRandomColor(){
+            let rand = Math.floor(Math.random()*0xFFFFFF).toString(16)
+            if(rand.length < 6){
+                return getRandomColor()
+            }else{
+                return '#' + rand
+            }
+        }
+        function Circle(x,y,radius){
+            this.x = x
+            this.y = y
+            this.radius = radius
+            circles.push(this)
+        }
+        Circle.prototype.update = function(){
+            this.radius--
+            if(this.radius >0) return true
+        }
+        Circle.prototype.render = function(){
+            ctx.beginPath()
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2)
+            ctx.fillStyle = getRandomColor()
+            ctx.fill()
+        }
+        canvas.onmousemove = function(){
+            new Circle(event.clientX, event.clientY, 50)
+        }
+        setInterval(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            circles.forEach(circle => {
+                circle.update() && circle.render()
+            })
+        }, 13);
+
+    </script>
+</body>
+</html>
