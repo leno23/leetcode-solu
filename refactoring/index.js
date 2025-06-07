@@ -48,15 +48,20 @@ function statement(invoice) {
     totalAmount += amountFor(perf)
   }
 
-  // 拆分循环，将不一样的处理拆开，并将volumeCredits放到相关代码附近
+  // 提炼函数 + 查询取代临时变量
+  // let volumeCredits = totalVolumnCredits()
+
+  result += `总共的费用：${usd(totalAmount)}\n`
+  result += `赚了：${totalVolumnCredits()} 个积分\n`
+  return result
+}
+//
+function totalVolumnCredits() {
   let volumeCredits = 0
   for (let perf of invoice.performances) {
     volumeCredits += volumeCreditsFor(perf)
   }
-
-  result += `总共的费用：${usd(totalAmount)}\n`
-  result += `赚了：${volumeCredits} 个积分\n`
-  return result
+  return volumeCredits
 }
 
 // 提炼函数，将计算积分的逻辑抽离出来
