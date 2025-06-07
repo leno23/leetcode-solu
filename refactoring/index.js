@@ -34,50 +34,55 @@ function usd(aNumber) {
 }
 // 移除参数，因为play这个参数不会改变
 function statement(invoice) {
-  let result = `演出：${invoice.customer}\n`
+  const statementData = {}
+  statementData.customer = invoice.customer
+  statementData.performances = invoice.performances.map(enrichPerformance)
+  statementData.totalAmount = totalAmount(statementData)
+  statementData.totalVolumnCredits = totalVolumnCredits(statementData)
+  return renderPlainText(statementData, plays)
 
-  for (let perf of invoice.performances) {
-    result += `-${playFor(perf).name}: ${usd(
-      amountFor(perf)
-    )} (${perf.audience}个座位)\n`
+  function enrichPerformance(aPerformance) {
+    const result = Object.assign({}, aPerformance)
+    result.play = playFor(result)
+    result.amount = amountFor(result)
+    result.volumeCredits = volumeCreditsFor(result)
+    return result
   }
-
-  // 提炼函数 + 查询取代临时变量
-
-  result += `总共的费用：${usd(totalAmount())}\n`
-  result += `赚了：${totalVolumnCredits()} 个积分\n`
-  return result
 }
 
-function totalAmount() {
+function totalAmount(data) {
   let result = 0
-  for (let perf of invoice.performances) {
-    result += amountFor(perf)
+  for (let perf of data.performances) {
+    result += perf.amount
   }
   return result
 }
-//
-function totalVolumnCredits() {
+
+function totalVolumnCredits(data) {
   let volumeCredits = 0
-  for (let perf of invoice.performances) {
-    volumeCredits += volumeCreditsFor(perf)
+  for (let perf of data.performances) {
+    volumeCredits += perf.volumeCredits
   }
   return volumeCredits
 }
 
+function renderPlainText(data) {
+  let result = `演出：${data.customer}\n`
+  for (let perf of data.performances) {
+    result += `-${perf.play.name}: ${usd(perf.amount)} (${perf.audience}个座位)\n`
+  }
+  result += `总共的费用：${usd(data.totalAmount)}\n`
+  result += `赚了：${data.totalVolumnCredits} 个积分\n`
+  return result
+}
 // 提炼函数，将计算积分的逻辑抽离出来
 function volumeCreditsFor(aPerformance) {
   let volumeCredits = 0
   // 观众超过30个的会奖励积分
-  volumeCredits += Math.max(
-    aPerformance.audience - 30,
-    0
-  )
+  volumeCredits += Math.max(aPerformance.audience - 30, 0)
   // 喜剧每五个观众额外奖励一个积分
-  if ('comedy' === playFor(aPerformance).type) {
-    volumeCredits += Math.floor(
-      aPerformance.audience / 5
-    )
+  if ('comedy' === aPerformance.play.type) {
+    volumeCredits += Math.floor(aPerformance.audience / 5)
   }
   return volumeCredits
 }
@@ -93,30 +98,24 @@ function amountFor(aPerformance) {
   let result = 0
 
   // calculate the amount for the performance
-  switch (playFor(aPerformance).type) {
+  switch (aPerformance.play.type) {
     case 'tragedy':
       result = 40000
       if (aPerformance.audience > 30) {
-        result +=
-          1000 * (aPerformance.audience - 30)
+        result += 1000 * (aPerformance.audience - 30)
       }
       break
     case 'comedy':
       result = 30000
       if (aPerformance.audience > 20) {
-        result +=
-          10000 +
-          500 * (aPerformance.audience - 20)
+        result += 10000 + 500 * (aPerformance.audience - 20)
       }
       result += 300 * aPerformance.audience
       break
     default:
-      throw new Error(
-        `unknown type: ${
-          playFor(aPerformance).type
-        }`
-      )
+      throw new Error(`unknown type: ${aPerformance.play.type}`)
   }
   return result
 }
+
 console.log(statement(invoice, plays))
