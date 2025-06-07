@@ -39,13 +39,15 @@ function statement(invoice, plays) {
   }).format
 
   // 以查询取代临时变量
-  function playFor (aPerformance) {
+  function playFor(aPerformance) {
     return plays[aPerformance.playID]
   }
   for (let perf of invoice.performances) {
-    const play = playFor(perf)
-
-    let thisAmount = amountFor(perf, play)
+    // 内联变量
+    let thisAmount = amountFor(
+      perf,
+      playFor(perf)
+    )
     // 观众超过30个的会奖励积分
     volumeCredits += Math.max(
       perf.audience - 30,
@@ -81,14 +83,16 @@ function amountFor(aPerformance, play) {
     case 'tragedy':
       result = 40000
       if (aPerformance.audience > 30) {
-        result += 1000 * (aPerformance.audience - 30)
+        result +=
+          1000 * (aPerformance.audience - 30)
       }
       break
     case 'comedy':
       result = 30000
       if (aPerformance.audience > 20) {
         result +=
-          10000 + 500 * (aPerformance.audience - 20)
+          10000 +
+          500 * (aPerformance.audience - 20)
       }
       result += 300 * aPerformance.audience
       break
