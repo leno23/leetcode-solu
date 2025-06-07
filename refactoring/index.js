@@ -27,7 +27,8 @@ let plays = {
   }
 }
 // This is a refactored version of the original code to improve readability and maintainability.
-function statement(invoice, plays) {
+// 移除参数，因为play这个参数不会改变
+function statement(invoice) {
   // Initialize variables for total amount and volume credits
   let totalAmount = 0
   let volumeCredits = 0
@@ -38,30 +39,23 @@ function statement(invoice, plays) {
     minimumFractionDigits: 2
   }).format
 
-  // 以查询取代临时变量
-  function playFor(aPerformance) {
-    return plays[aPerformance.playID]
-  }
   for (let perf of invoice.performances) {
     // 内联变量
-    let thisAmount = amountFor(
-      perf,
-      playFor(perf)
-    )
+    let thisAmount = amountFor(perf)
     // 观众超过30个的会奖励积分
     volumeCredits += Math.max(
       perf.audience - 30,
       0
     )
     // 喜剧每五个观众额外奖励一个积分
-    if ('comedy' === play.type) {
+    if ('comedy' === playFor(perf).type) {
       volumeCredits += Math.floor(
         perf.audience / 5
       )
     }
 
     // print line for this order
-    result += ` ${play.name}: ${format(
+    result += ` ${playFor(perf).name}: ${format(
       thisAmount / 100
     )} (${perf.audience}个座位)\n`
     totalAmount += thisAmount
@@ -73,13 +67,18 @@ function statement(invoice, plays) {
   return result
 }
 
+// 以查询取代临时变量
+function playFor(aPerformance) {
+  return plays[aPerformance.playID]
+}
+
 // 提炼函数，将计算费用部分的逻辑抽离出来
-function amountFor(aPerformance, play) {
+function amountFor(aPerformance) {
   // 变量改名 thisAmount -> result
   let result = 0
 
   // calculate the amount for the performance
-  switch (play.type) {
+  switch (playFor(aPerformance).type) {
     case 'tragedy':
       result = 40000
       if (aPerformance.audience > 30) {
@@ -98,7 +97,9 @@ function amountFor(aPerformance, play) {
       break
     default:
       throw new Error(
-        `unknown type: ${play.type}`
+        `unknown type: ${
+          playFor(aPerformance).type
+        }`
       )
   }
   return result
