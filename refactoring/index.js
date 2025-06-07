@@ -40,18 +40,7 @@ function statement(invoice) {
   }).format
 
   for (let perf of invoice.performances) {
-    // 内联变量
-    // 观众超过30个的会奖励积分
-    volumeCredits += Math.max(
-      perf.audience - 30,
-      0
-    )
-    // 喜剧每五个观众额外奖励一个积分
-    if ('comedy' === playFor(perf).type) {
-      volumeCredits += Math.floor(
-        perf.audience / 5
-      )
-    }
+    volumeCredits += volumeCreditsFor(perf)
 
     // print line for this order
     result += ` ${playFor(perf).name}: ${format(
@@ -64,6 +53,23 @@ function statement(invoice) {
   )}\n`
   result += `赚了：${volumeCredits} 个积分\n`
   return result
+}
+
+// 提炼函数，将计算积分的逻辑抽离出来
+function volumeCreditsFor(aPerformance) {
+  let volumeCredits = 0
+  // 观众超过30个的会奖励积分
+  volumeCredits += Math.max(
+    aPerformance.audience - 30,
+    0
+  )
+  // 喜剧每五个观众额外奖励一个积分
+  if ('comedy' === playFor(aPerformance).type) {
+    volumeCredits += Math.floor(
+      aPerformance.audience / 5
+    )
+  }
+  return volumeCredits
 }
 
 // 以查询取代临时变量
