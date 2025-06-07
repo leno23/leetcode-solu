@@ -27,33 +27,34 @@ let plays = {
   }
 }
 // 变量改为函数声明，并改变函数名
-function usd() {
+function usd(aNumber) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2
-  }).format
+  }).format(aNumber / 100)
 }
 // This is a refactored version of the original code to improve readability and maintainability.
 // 移除参数，因为play这个参数不会改变
 function statement(invoice) {
   // Initialize variables for total amount and volume credits
   let totalAmount = 0
-  let volumeCredits = 0
   let result = `演出：${invoice.customer}\n`
 
   for (let perf of invoice.performances) {
-    volumeCredits += volumeCreditsFor(perf)
-
-    // print line for this order
-    result += ` ${playFor(perf).name}: ${usd(
-      amountFor(perf) / 100
+    result += `-${playFor(perf).name}: ${usd(
+      amountFor(perf)
     )} (${perf.audience}个座位)\n`
     totalAmount += amountFor(perf)
   }
-  result += `总共的费用：${usd(
-    totalAmount / 100
-  )}\n`
+
+  // 拆分循环，将不一样的处理拆开，并将volumeCredits放到相关代码附近
+  let volumeCredits = 0
+  for (let perf of invoice.performances) {
+    volumeCredits += volumeCreditsFor(perf)
+  }
+
+  result += `总共的费用：${usd(totalAmount)}\n`
   result += `赚了：${volumeCredits} 个积分\n`
   return result
 }
