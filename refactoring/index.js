@@ -28,43 +28,24 @@ let plays = {
 }
 // This is a refactored version of the original code to improve readability and maintainability.
 function statement(invoice, plays) {
-    // Initialize variables for total amount and volume credits
+  // Initialize variables for total amount and volume credits
   let totalAmount = 0
   let volumeCredits = 0
-  let result = `Statement for ${invoice.customer}\n`
+  let result = `演出：${invoice.customer}\n`
   const format = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2
   }).format
 
+  // 以查询取代临时变量
+  function playFor (aPerformance) {
+    return plays[aPerformance.playID]
+  }
   for (let perf of invoice.performances) {
-    const play = plays[perf.playID]
-    let thisAmount = 0
+    const play = playFor(perf)
 
-    // calculate the amount for the performance
-    switch (play.type) {
-      case 'tragedy':
-        thisAmount = 40000
-        if (perf.audience > 30) {
-          thisAmount +=
-            1000 * (perf.audience - 30)
-        }
-        break
-      case 'comedy':
-        thisAmount = 30000
-        if (perf.audience > 20) {
-          thisAmount +=
-            10000 + 500 * (perf.audience - 20)
-        }
-        thisAmount += 300 * perf.audience
-        break
-      default:
-        throw new Error(
-          `unknown type: ${play.type}`
-        )
-    }
-
+    let thisAmount = amountFor(perf, play)
     // 观众超过30个的会奖励积分
     volumeCredits += Math.max(
       perf.audience - 30,
@@ -80,13 +61,42 @@ function statement(invoice, plays) {
     // print line for this order
     result += ` ${play.name}: ${format(
       thisAmount / 100
-    )} (${perf.audience} seats)\n`
+    )} (${perf.audience}个座位)\n`
     totalAmount += thisAmount
   }
-  result += `Amount owed is ${format(
+  result += `总共的费用：${format(
     totalAmount / 100
   )}\n`
-  result += `You earned ${volumeCredits} credits\n`
+  result += `赚了：${volumeCredits} 个积分\n`
+  return result
+}
+
+// 提炼函数，将计算费用部分的逻辑抽离出来
+function amountFor(aPerformance, play) {
+  // 变量改名 thisAmount -> result
+  let result = 0
+
+  // calculate the amount for the performance
+  switch (play.type) {
+    case 'tragedy':
+      result = 40000
+      if (aPerformance.audience > 30) {
+        result += 1000 * (aPerformance.audience - 30)
+      }
+      break
+    case 'comedy':
+      result = 30000
+      if (aPerformance.audience > 20) {
+        result +=
+          10000 + 500 * (aPerformance.audience - 20)
+      }
+      result += 300 * aPerformance.audience
+      break
+    default:
+      throw new Error(
+        `unknown type: ${play.type}`
+      )
+  }
   return result
 }
 for (let item of invoice) {
