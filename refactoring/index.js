@@ -41,7 +41,6 @@ function statement(invoice) {
 
   for (let perf of invoice.performances) {
     // 内联变量
-    let thisAmount = amountFor(perf)
     // 观众超过30个的会奖励积分
     volumeCredits += Math.max(
       perf.audience - 30,
@@ -56,9 +55,9 @@ function statement(invoice) {
 
     // print line for this order
     result += ` ${playFor(perf).name}: ${format(
-      thisAmount / 100
+      amountFor(perf) / 100
     )} (${perf.audience}个座位)\n`
-    totalAmount += thisAmount
+    totalAmount += amountFor(perf)
   }
   result += `总共的费用：${format(
     totalAmount / 100
