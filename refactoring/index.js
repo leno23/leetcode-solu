@@ -32,11 +32,8 @@ function usd(aNumber) {
     minimumFractionDigits: 2
   }).format(aNumber / 100)
 }
-// This is a refactored version of the original code to improve readability and maintainability.
 // 移除参数，因为play这个参数不会改变
 function statement(invoice) {
-  // Initialize variables for total amount and volume credits
-  let totalAmount = 0
   let result = `演出：${invoice.customer}\n`
 
   for (let perf of invoice.performances) {
