@@ -1,22 +1,20 @@
-let invoice = [
-  {
-    customer: 'Bingo',
-    performances: [
-      {
-        playID: 'hamlet',
-        audience: 55
-      },
-      {
-        playID: 'as-like',
-        audience: 35
-      },
-      {
-        playID: 'othello',
-        audience: 40
-      }
-    ]
-  }
-]
+let invoice = {
+  customer: 'Bingo',
+  performances: [
+    {
+      playID: 'hamlet',
+      audience: 55
+    },
+    {
+      playID: 'as-like',
+      audience: 35
+    },
+    {
+      playID: 'othello',
+      audience: 40
+    }
+  ]
+}
 
 let plays = {
   hamlet: { name: 'Hamlet', type: 'tragedy' },
@@ -45,14 +43,20 @@ function statement(invoice) {
     result += `-${playFor(perf).name}: ${usd(
       amountFor(perf)
     )} (${perf.audience}个座位)\n`
-    totalAmount += amountFor(perf)
   }
 
   // 提炼函数 + 查询取代临时变量
-  // let volumeCredits = totalVolumnCredits()
 
-  result += `总共的费用：${usd(totalAmount)}\n`
+  result += `总共的费用：${usd(totalAmount())}\n`
   result += `赚了：${totalVolumnCredits()} 个积分\n`
+  return result
+}
+
+function totalAmount() {
+  let result = 0
+  for (let perf of invoice.performances) {
+    result += amountFor(perf)
+  }
   return result
 }
 //
@@ -118,6 +122,4 @@ function amountFor(aPerformance) {
   }
   return result
 }
-for (let item of invoice) {
-  console.log(statement(item, plays))
-}
+console.log(statement(invoice, plays))
