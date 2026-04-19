@@ -1,0 +1,49 @@
+name: Daily AI Consulting News Issue
+
+on:
+  schedule:
+    # 北京时间每日 09:00（UTC+8 → 01:00 UTC）
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      news_date:
+        description: "Issue 显示的检索日期（YYYY-MM-DD），留空则使用当前上海日期"
+        required: false
+        default: ""
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build issue body
+        id: body
+        env:
+          NEWS_DATE: ${{ github.event.inputs.news_date }}
+        run: |
+          BODY_FILE="$(mktemp)"
+          python3 .github/scripts/daily_ai_consulting_news.py > "$BODY_FILE"
+          echo "path=$BODY_FILE" >> "$GITHUB_OUTPUT"
+          if [ -n "${NEWS_DATE:-}" ]; then
+            D="$NEWS_DATE"
+          else
+            D=$(TZ=Asia/Shanghai date +%Y-%m-%d)
+          fi
+          echo "title=Daily AI Consulting News - ${D}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_TITLE: ${{ steps.body.outputs.title }}
+          BODY_PATH: ${{ steps.body.outputs.path }}
+        run: |
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "$ISSUE_TITLE" \
+            --body-file "$BODY_PATH"
