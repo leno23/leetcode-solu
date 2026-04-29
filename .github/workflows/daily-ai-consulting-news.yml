@@ -1,0 +1,35 @@
+name: Daily AI Consulting News Issue
+
+on:
+  schedule:
+    # 每日 09:00 UTC（与当前自动化触发时间对齐）
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  open-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate issue body
+        id: gen
+        run: |
+          BODY_FILE="$(mktemp)"
+          python3 scripts/daily_ai_consulting_news.py > "$BODY_FILE"
+          echo "body_file=$BODY_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="Daily AI Consulting News - $(date -u +%Y-%m-%d)"
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "$TITLE" \
+            --body-file "${{ steps.gen.outputs.body_file }}"
