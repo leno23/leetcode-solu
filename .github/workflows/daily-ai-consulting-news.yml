@@ -1,0 +1,33 @@
+name: Daily AI Consulting News Issue
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 北京时间每日 09:00（UTC 01:00）
+    - cron: "0 1 * * *"
+
+# 避免同一窗口内重复排队导致多条 Issue
+concurrency:
+  group: daily-ai-consulting-news
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create daily AI consulting news issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/daily_ai_consulting_news_issue.py
