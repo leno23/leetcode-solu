@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Batch-generate Chinese LeetCode explainer videos.
 
-Generates lightweight 1920x1080 MP4 videos for LeetCode problems 2-100.
+Generates lightweight 1920x1080 MP4 videos for LeetCode problem ranges.
 The script fetches problem metadata from LeetCode, uses Chinese narration, and
 renders educational slides with subtitles, topic tags, idea diagrams, pseudocode,
 and complexity notes. It prefers OpenAI TTS when OPENAI_API_KEY is available,
@@ -33,7 +33,7 @@ FPS = 24
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_DIR = ROOT / "assets" / "leetcode_batch"
 OUTPUT_DIR = ROOT / "output"
-CACHE_PATH = ASSET_DIR / "problems_2_100.json"
+CACHE_PATH = ASSET_DIR / "problems_cache.json"
 BG = "#0F172A"
 PANEL = "#111827"
 PANEL_2 = "#1E293B"
@@ -134,10 +134,12 @@ def post_json(url: str, payload: dict[str, Any], referer: str | None = None) -> 
         return json.loads(response.read().decode())
 
 
-def fetch_problem_list() -> list[Problem]:
+def fetch_problem_list(max_number: int) -> list[Problem]:
     if CACHE_PATH.exists():
         data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-        return [Problem(**item) for item in data]
+        cached = [Problem(**item) for item in data]
+        if cached and max(problem.number for problem in cached) >= max_number:
+            return cached
 
     query = """
     query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -146,14 +148,28 @@ def fetch_problem_list() -> list[Problem]:
       }
     }
     """
-    payload = {"query": query, "variables": {"categorySlug": "all-code-essentials", "skip": 0, "limit": 100, "filters": {}}}
-    data = post_json("https://leetcode.com/graphql", payload)
-    raw_questions = data["data"]["problemsetQuestionList"]["questions"]
+    raw_questions: list[dict[str, Any]] = []
+    skip = 0
+    page_size = 100
+    while True:
+        payload = {
+            "query": query,
+            "variables": {"categorySlug": "all-code-essentials", "skip": skip, "limit": page_size, "filters": {}},
+        }
+        data = post_json("https://leetcode.com/graphql", payload)
+        page = data["data"]["problemsetQuestionList"]["questions"]
+        if not page:
+            break
+        raw_questions.extend(page)
+        seen_numbers = [int(item["questionFrontendId"]) for item in raw_questions if item["questionFrontendId"].isdigit()]
+        if seen_numbers and max(seen_numbers) >= max_number:
+            break
+        skip += page_size
 
     problems: list[Problem] = []
     for raw in raw_questions:
         number = int(raw["questionFrontendId"])
-        if not 2 <= number <= 100:
+        if not 1 <= number <= max_number:
             continue
         translated_title = fetch_translated_title(raw["titleSlug"], number)
         topics = [CN_TOPIC.get(tag["name"], tag["name"]) for tag in raw.get("topicTags", [])[:4]]
@@ -638,7 +654,7 @@ def main() -> int:
     args = parse_args()
     try:
         ensure_dependencies()
-        problems = [p for p in fetch_problem_list() if args.start <= p.number <= args.end]
+        problems = [p for p in fetch_problem_list(args.end) if args.start <= p.number <= args.end]
         print(f"准备生成 {len(problems)} 个视频：#{args.start} - #{args.end}")
         if args.dry_run:
             for p in problems:
