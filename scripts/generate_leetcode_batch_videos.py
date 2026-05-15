@@ -134,12 +134,33 @@ def post_json(url: str, payload: dict[str, Any], referer: str | None = None) -> 
         return json.loads(response.read().decode())
 
 
-def fetch_problem_list(max_number: int) -> list[Problem]:
+def fetch_problem_list(max_number: int, min_number: int = 1) -> list[Problem]:
+    cached_by_number: dict[int, Problem] = {}
     if CACHE_PATH.exists():
         data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
         cached = [Problem(**item) for item in data]
+        cached_by_number = {problem.number: problem for problem in cached}
         if cached and max(problem.number for problem in cached) >= max_number:
-            return cached
+            refreshed = False
+            updated: list[Problem] = []
+            for problem in cached:
+                if min_number <= problem.number <= max_number and problem.translated_title == problem.title:
+                    problem = Problem(
+                        number=problem.number,
+                        title=problem.title,
+                        translated_title=fetch_translated_title(problem.slug, problem.number),
+                        slug=problem.slug,
+                        difficulty=problem.difficulty,
+                        topics=problem.topics,
+                    )
+                    refreshed = True
+                    time.sleep(0.08)
+                updated.append(problem)
+            if refreshed:
+                CACHE_PATH.write_text(
+                    json.dumps([p.__dict__ for p in updated], ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+            return updated
 
     query = """
     query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -171,7 +192,13 @@ def fetch_problem_list(max_number: int) -> list[Problem]:
         number = int(raw["questionFrontendId"])
         if not 1 <= number <= max_number:
             continue
-        translated_title = fetch_translated_title(raw["titleSlug"], number)
+        cached_problem = cached_by_number.get(number)
+        if cached_problem:
+            translated_title = cached_problem.translated_title
+        elif min_number <= number <= max_number:
+            translated_title = fetch_translated_title(raw["titleSlug"], number)
+        else:
+            translated_title = TITLE_FALLBACK.get(number, raw["title"])
         topics = [CN_TOPIC.get(tag["name"], tag["name"]) for tag in raw.get("topicTags", [])[:4]]
         problems.append(
             Problem(
@@ -642,7 +669,7 @@ def render_problem(problem: Problem, overwrite: bool = False) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="批量生成 LeetCode 2-100 中文题解视频")
+    parser = argparse.ArgumentParser(description="批量生成 LeetCode 中文题解视频")
     parser.add_argument("--start", type=int, default=2)
     parser.add_argument("--end", type=int, default=100)
     parser.add_argument("--overwrite", action="store_true")
@@ -654,7 +681,7 @@ def main() -> int:
     args = parse_args()
     try:
         ensure_dependencies()
-        problems = [p for p in fetch_problem_list(args.end) if args.start <= p.number <= args.end]
+        problems = [p for p in fetch_problem_list(args.end, args.start) if args.start <= p.number <= args.end]
         print(f"准备生成 {len(problems)} 个视频：#{args.start} - #{args.end}")
         if args.dry_run:
             for p in problems:
