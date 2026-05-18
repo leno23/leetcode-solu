@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -134,6 +135,57 @@ def post_json(url: str, payload: dict[str, Any], referer: str | None = None) -> 
         return json.loads(response.read().decode())
 
 
+def slugify_title(title: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    return slug or "leetcode-problem"
+
+
+def fetch_doocs_problem_list(max_number: int, min_number: int = 1) -> list[Problem]:
+    problems: list[Problem] = []
+    start_bucket = (min_number // 100) * 100
+    end_bucket = (max_number // 100) * 100
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/vnd.github+json"}
+    for bucket in range(start_bucket, end_bucket + 1, 100):
+        folder = f"{bucket:04d}-{bucket + 99:04d}"
+        url = f"https://api.github.com/repos/doocs/leetcode/contents/solution/{folder}"
+        request = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            entries = json.loads(response.read().decode())
+        for entry in entries:
+            name = entry.get("name", "")
+            match = re.match(r"^(\d{4})\.(.+)$", name)
+            if not match:
+                continue
+            number = int(match.group(1))
+            if not min_number <= number <= max_number:
+                continue
+            title = match.group(2).strip()
+            translated_title = TITLE_FALLBACK.get(number, title)
+            problems.append(
+                Problem(
+                    number=number,
+                    title=title,
+                    translated_title=translated_title,
+                    slug=slugify_title(title),
+                    difficulty="Medium",
+                    topics=[],
+                )
+            )
+    return sorted(problems, key=lambda problem: problem.number)
+
+
+def merge_problem_cache(cached_by_number: dict[int, Problem], fetched: list[Problem], max_number: int) -> list[Problem]:
+    merged = {number: problem for number, problem in cached_by_number.items() if 1 <= number <= max_number}
+    for problem in fetched:
+        merged[problem.number] = problem
+    return [merged[number] for number in sorted(merged)]
+
+
+def write_problem_cache(problems: list[Problem]) -> None:
+    ASSET_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_PATH.write_text(json.dumps([p.__dict__ for p in problems], ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def fetch_problem_list(max_number: int, min_number: int = 1) -> list[Problem]:
     cached_by_number: dict[int, Problem] = {}
     if CACHE_PATH.exists():
@@ -157,10 +209,15 @@ def fetch_problem_list(max_number: int, min_number: int = 1) -> list[Problem]:
                     time.sleep(0.08)
                 updated.append(problem)
             if refreshed:
-                CACHE_PATH.write_text(
-                    json.dumps([p.__dict__ for p in updated], ensure_ascii=False, indent=2), encoding="utf-8"
-                )
+                write_problem_cache(updated)
             return updated
+
+    if os.getenv("LEETCODE_METADATA_SOURCE") == "doocs":
+        fallback = fetch_doocs_problem_list(max_number, min_number)
+        if fallback:
+            problems = merge_problem_cache(cached_by_number, fallback, max_number)
+            write_problem_cache(problems)
+            return problems
 
     query = """
     query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
@@ -169,52 +226,60 @@ def fetch_problem_list(max_number: int, min_number: int = 1) -> list[Problem]:
       }
     }
     """
-    raw_questions: list[dict[str, Any]] = []
-    skip = 0
-    page_size = 100
-    while True:
-        payload = {
-            "query": query,
-            "variables": {"categorySlug": "all-code-essentials", "skip": skip, "limit": page_size, "filters": {}},
-        }
-        data = post_json("https://leetcode.com/graphql", payload)
-        page = data["data"]["problemsetQuestionList"]["questions"]
-        if not page:
-            break
-        raw_questions.extend(page)
-        seen_numbers = [int(item["questionFrontendId"]) for item in raw_questions if item["questionFrontendId"].isdigit()]
-        if seen_numbers and max(seen_numbers) >= max_number:
-            break
-        skip += page_size
+    try:
+        raw_questions: list[dict[str, Any]] = []
+        skip = 0
+        page_size = 100
+        while True:
+            payload = {
+                "query": query,
+                "variables": {"categorySlug": "all-code-essentials", "skip": skip, "limit": page_size, "filters": {}},
+            }
+            data = post_json("https://leetcode.com/graphql", payload)
+            page = data["data"]["problemsetQuestionList"]["questions"]
+            if not page:
+                break
+            raw_questions.extend(page)
+            seen_numbers = [int(item["questionFrontendId"]) for item in raw_questions if item["questionFrontendId"].isdigit()]
+            if seen_numbers and max(seen_numbers) >= max_number:
+                break
+            skip += page_size
 
-    problems: list[Problem] = []
-    for raw in raw_questions:
-        number = int(raw["questionFrontendId"])
-        if not 1 <= number <= max_number:
-            continue
-        cached_problem = cached_by_number.get(number)
-        if cached_problem:
-            translated_title = cached_problem.translated_title
-        elif min_number <= number <= max_number:
-            translated_title = fetch_translated_title(raw["titleSlug"], number)
-        else:
-            translated_title = TITLE_FALLBACK.get(number, raw["title"])
-        topics = [CN_TOPIC.get(tag["name"], tag["name"]) for tag in raw.get("topicTags", [])[:4]]
-        problems.append(
-            Problem(
-                number=number,
-                title=raw["title"],
-                translated_title=translated_title,
-                slug=raw["titleSlug"],
-                difficulty=raw["difficulty"],
-                topics=topics,
+        problems: list[Problem] = []
+        for raw in raw_questions:
+            number = int(raw["questionFrontendId"])
+            if not 1 <= number <= max_number:
+                continue
+            cached_problem = cached_by_number.get(number)
+            if cached_problem:
+                translated_title = cached_problem.translated_title
+            elif min_number <= number <= max_number:
+                translated_title = fetch_translated_title(raw["titleSlug"], number)
+            else:
+                translated_title = TITLE_FALLBACK.get(number, raw["title"])
+            topics = [CN_TOPIC.get(tag["name"], tag["name"]) for tag in raw.get("topicTags", [])[:4]]
+            problems.append(
+                Problem(
+                    number=number,
+                    title=raw["title"],
+                    translated_title=translated_title,
+                    slug=raw["titleSlug"],
+                    difficulty=raw["difficulty"],
+                    topics=topics,
+                )
             )
-        )
-        time.sleep(0.08)
+            time.sleep(0.08)
 
-    ASSET_DIR.mkdir(parents=True, exist_ok=True)
-    CACHE_PATH.write_text(json.dumps([p.__dict__ for p in problems], ensure_ascii=False, indent=2), encoding="utf-8")
-    return problems
+        write_problem_cache(problems)
+        return problems
+    except Exception as exc:
+        print(f"[METADATA] leetcode fetch failed: {exc}; fallback to doocs metadata", file=sys.stderr)
+        fallback = fetch_doocs_problem_list(max_number, min_number)
+        if fallback:
+            problems = merge_problem_cache(cached_by_number, fallback, max_number)
+            write_problem_cache(problems)
+            return problems
+        raise
 
 
 def fetch_translated_title(slug: str, number: int) -> str:
