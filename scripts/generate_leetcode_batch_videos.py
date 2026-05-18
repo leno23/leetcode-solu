@@ -556,8 +556,9 @@ def generate_voice(text: str, output_path: Path) -> str:
             voice = os.getenv("EDGE_TTS_VOICE", "zh-CN-XiaoxiaoNeural")
             rate = os.getenv("EDGE_TTS_RATE", "+0%")
             pitch = os.getenv("EDGE_TTS_PITCH", "+0Hz")
+            timeout = float(os.getenv("EDGE_TTS_TIMEOUT", "90"))
             communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
-            await communicate.save(str(output_path))
+            await asyncio.wait_for(communicate.save(str(output_path)), timeout=timeout)
 
         asyncio.run(save())
         return "edge-tts"
